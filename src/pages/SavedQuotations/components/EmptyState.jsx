@@ -1,9 +1,9 @@
 import React from "react";
 
 /**
- * Estado vacío cuando no hay cotizaciones o sin resultados de búsqueda
+ * Estado vacío cuando no hay cotizaciones o sin resultados de filtros
  */
-const EmptyState = ({ isFiltered, searchQuery }) => {
+const EmptyState = ({ isFiltered }) => {
   if (isFiltered) {
     return (
       <div className="text-center py-16 px-4">
@@ -25,13 +25,10 @@ const EmptyState = ({ isFiltered, searchQuery }) => {
           No se encontraron cotizaciones
         </h3>
         <p className="text-gray-500 mb-4">
-          {searchQuery
-            ? `No hay resultados para "${searchQuery}"`
-            : "No hay cotizaciones que coincidan con los filtros aplicados"}
+          No hay cotizaciones que coincidan con los filtros aplicados
         </p>
         <p className="text-sm text-gray-400">
-          Intenta ajustar los filtros o la búsqueda para encontrar más
-          resultados.
+          Intenta ajustar los filtros para encontrar más resultados.
         </p>
       </div>
     );

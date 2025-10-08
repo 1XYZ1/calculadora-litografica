@@ -4,7 +4,12 @@ import ClientGroupCard from "./ClientGroupCard";
 /**
  * Lista de cotizaciones agrupadas por cliente
  */
-const QuotationsListByClient = ({ groupedQuotations, onEdit, onDelete }) => {
+const QuotationsListByClient = ({
+  groupedQuotations,
+  onEdit,
+  onDelete,
+  onStatusChange,
+}) => {
   const clientNames = Object.keys(groupedQuotations);
 
   if (clientNames.length === 0) {
@@ -26,6 +31,7 @@ const QuotationsListByClient = ({ groupedQuotations, onEdit, onDelete }) => {
             count={group.count}
             onEdit={onEdit}
             onDelete={onDelete}
+            onStatusChange={onStatusChange}
           />
         );
       })}

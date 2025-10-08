@@ -144,6 +144,7 @@ export const useQuotation = ({
         timestamp: Timestamp.now(),
         items,
         grandTotals,
+        status: "pending", // Estado inicial para nuevas cotizaciones
       };
 
       await addDoc(quotationsCollectionRef, quotationData);

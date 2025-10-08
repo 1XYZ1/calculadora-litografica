@@ -86,6 +86,25 @@ export const FINISHING_KEYS = {
   TROQUELADO: "troquelado",
 };
 
+// Quotation status constants
+export const QUOTATION_STATUS = {
+  PENDING: "pending", // "pendiente de envío"
+  SENT: "sent", // "Enviada"
+  ACCEPTED: "accepted", // "Aceptada"
+};
+
+export const QUOTATION_STATUS_LABELS = {
+  pending: "Pendiente de envío",
+  sent: "Enviada",
+  accepted: "Aceptada",
+};
+
+export const QUOTATION_STATUS_COLORS = {
+  pending: "warning", // amarillo/amber
+  sent: "info", // azul
+  accepted: "success", // verde
+};
+
 // Messages
 export const MESSAGES = {
   ERROR_NO_AUTH: "Debe estar autenticado.",

@@ -9,6 +9,7 @@ import { useQuotationsFilters } from "./hooks/useQuotationsFilters";
 import { useQuotationsGrouping } from "./hooks/useQuotationsGrouping";
 import { useQuotationsDeletion } from "./hooks/useQuotationsDeletion";
 import { useNotification } from "./hooks/useNotification";
+import { useStatusChange } from "./hooks/useStatusChange";
 import { useClients } from "../../hooks/useClients";
 
 // Componentes
@@ -35,10 +36,8 @@ export default function SavedQuotations({ onLoadQuotation }) {
   // Hook: Cargar lista de clientes
   const { clients } = useClients();
 
-  // Hook: Gestión de filtros (búsqueda + cliente)
+  // Hook: Gestión de filtros (cliente)
   const {
-    searchQuery,
-    setSearchQuery,
     selectedClientId,
     setSelectedClientId,
     filteredQuotations,
@@ -51,6 +50,15 @@ export default function SavedQuotations({ onLoadQuotation }) {
 
   // Hook: Notificaciones
   const { message, showSuccess, showError, clearMessage } = useNotification();
+
+  // Hook: Cambio de estado
+  const { changeStatus } = useStatusChange({
+    db,
+    appId,
+    userId,
+    onSuccess: showSuccess,
+    onError: showError,
+  });
 
   // Hook: Eliminación
   const {
@@ -65,11 +73,6 @@ export default function SavedQuotations({ onLoadQuotation }) {
     onSuccess: showSuccess,
     onError: showError,
   });
-
-  // Handler: Limpiar búsqueda
-  const handleClearSearch = useCallback(() => {
-    setSearchQuery("");
-  }, [setSearchQuery]);
 
   // Mostrar error de Firestore si existe
   if (error) {
@@ -102,11 +105,8 @@ export default function SavedQuotations({ onLoadQuotation }) {
       <div className="max-w-7xl mx-auto bg-white p-4 sm:p-6 lg:p-8 rounded-none sm:rounded-2xl shadow-xl">
         <SavedQuotationsHeader totalCount={filteredQuotations.length} />
 
-        {/* Búsqueda y filtros */}
+        {/* Filtros */}
         <SearchBar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onClear={handleClearSearch}
           selectedClientId={selectedClientId}
           onClientFilterChange={setSelectedClientId}
           clients={clients}
@@ -128,12 +128,13 @@ export default function SavedQuotations({ onLoadQuotation }) {
         {loading ? (
           <LoadingSkeleton />
         ) : filteredQuotations.length === 0 ? (
-          <EmptyState isFiltered={hasActiveFilters} searchQuery={searchQuery} />
+          <EmptyState isFiltered={hasActiveFilters} />
         ) : (
           <QuotationsListByClient
             groupedQuotations={groupedQuotations}
             onEdit={onLoadQuotation}
             onDelete={confirmDeleteSingle}
+            onStatusChange={changeStatus}
           />
         )}
       </div>

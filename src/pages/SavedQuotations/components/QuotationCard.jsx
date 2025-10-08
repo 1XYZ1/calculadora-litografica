@@ -1,26 +1,16 @@
 import React from "react";
 import { formatQuotationDate } from "../utils/quotationUtils";
+import StatusDropdown from "./StatusDropdown";
 
 /**
  * QuotationCard – fila de “Presupuestos/Cotizaciones”
  * Zonas: [Select] | [Nombre + Cliente + Fecha] | [Totales] | [Estado/Tags] | [Acciones]
- *
- * Props mínimas (compatibles con tu versión):
- * - quotation: { id, name, clientName?, timestamp, grandTotals? }
- * - onEdit(quotation), onDelete(id, name)
- *
- * Props opcionales:
- * - onPreview?(quotation), onDuplicate?(quotation), onShare?(quotation)
- * - selectable?: boolean, selected?: boolean, onToggleSelect?(id)
- * - status?: "draft" | "sent" | "accepted" | "rejected" | string
- * - currency?: string  // por defecto "USD"
- * - showBolivars?: boolean // por defecto true si viene grandTotals.totalCostInBs
- * - tags?: string[] // etiquetas libres (p.ej. “Entrega 48h”)
  */
 const QuotationCard = ({
   quotation,
   onEdit,
   onDelete,
+  onStatusChange,
   onPreview,
   onDuplicate,
   onShare,
@@ -32,7 +22,14 @@ const QuotationCard = ({
   showBolivars,
   tags = [],
 }) => {
-  const { id, name, clientName, timestamp, grandTotals = {} } = quotation || {};
+  const {
+    id,
+    name,
+    clientName,
+    timestamp,
+    grandTotals = {},
+    status: quotationStatus,
+  } = quotation || {};
   const usd = Number(grandTotals.totalGeneral || 0);
   const bs = Number(grandTotals.totalCostInBs || 0);
   const showBs =
@@ -58,12 +55,13 @@ const QuotationCard = ({
         selected ? "ring-2 ring-blue-500 ring-offset-0" : "border-gray-200",
       ].join(" ")}
     >
-      {/* Grid principal: en desktop 5 zonas; en móvil apila */}
+      {/* Grid: en desktop 5 zonas; en móvil apila */}
       <div
         className={[
           "grid items-center gap-4 p-4",
-          // 28px | 1fr | 240px | 160px | 220px aprox
-          "md:grid-cols-[28px,1fr,240px,160px,220px]",
+          // columnas de contenido, sin anchos fijos para evitar huecos
+          "md:grid-cols-[28px,1fr,auto,auto,auto]",
+          "md:gap-x-6",
         ].join(" ")}
       >
         {/* 1) Selección (solo desktop) */}
@@ -122,7 +120,7 @@ const QuotationCard = ({
         </div>
 
         {/* 3) Totales */}
-        <div className="md:justify-self-end">
+        <div className="md:justify-self-end order-2 md:order-none">
           <div className="text-sm text-gray-500">Total ({currency})</div>
           <div className="text-lg md:text-xl font-semibold text-emerald-600 tabular-nums">
             {formatMoney(usd, currency)}
@@ -134,22 +132,67 @@ const QuotationCard = ({
           )}
         </div>
 
-        {/* 4) Estado breve (si no usas `status`, deja fecha resumida) */}
-        <div className="md:justify-self-end text-sm text-gray-600">
-          <div className="hidden md:block">
-            {status ? (
-              <span className="text-gray-700">Estado:</span>
-            ) : (
-              <span className="text-gray-700">Actualizado:</span>
+        {/* 4) Estado + Acciones (móvil: misma fila) */}
+        <div className="order-3 md:order-none md:justify-self-start w-full md:w-auto">
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            {/* Estado */}
+            {onStatusChange && (
+              <div className="flex-1 md:flex-none [&_*]:cursor-pointer">
+                <StatusDropdown
+                  className="cursor-pointer w-full md:w-48"
+                  currentStatus={quotationStatus || "pending"}
+                  quotationId={id}
+                  onStatusChange={onStatusChange}
+                />
+              </div>
             )}
-            <span className="ml-1">
-              {status ? statusLabel(status) : formatRelativeDate(timestamp)}
-            </span>
+
+            {/* Acciones - Móvil */}
+            <div className="flex items-center justify-end gap-2 md:hidden">
+              {onPreview && (
+                <IconButton
+                  title="Previsualizar"
+                  onClick={() => onPreview(quotation)}
+                >
+                  <PreviewIcon />
+                </IconButton>
+              )}
+              {onDuplicate && (
+                <IconButton
+                  title="Duplicar"
+                  onClick={() => onDuplicate(quotation)}
+                >
+                  <CopyIcon />
+                </IconButton>
+              )}
+              {onShare && (
+                <IconButton
+                  title="Compartir"
+                  onClick={() => onShare(quotation)}
+                >
+                  <ShareIcon />
+                </IconButton>
+              )}
+              <IconButton
+                title="Editar"
+                onClick={() => onEdit(quotation)}
+                hover="hover:text-blue-700 hover:bg-blue-50"
+              >
+                <PencilIcon />
+              </IconButton>
+              <IconButton
+                title="Eliminar"
+                onClick={() => onDelete(id, name)}
+                hover="hover:text-red-700 hover:bg-red-50"
+              >
+                <TrashIcon />
+              </IconButton>
+            </div>
           </div>
         </div>
 
-        {/* 5) Acciones */}
-        <div className="md:justify-self-end flex w-full md:w-auto items-center justify-end gap-1">
+        {/* 5) Acciones - Desktop */}
+        <div className="order-4 md:order-none md:justify-self-end hidden md:flex items-center justify-end gap-2">
           {onPreview && (
             <IconButton
               title="Previsualizar"
@@ -329,7 +372,7 @@ const ClientIcon = () => (
   </svg>
 );
 
-/* Helpers de presentación */
+/* Helpers */
 const statusTone = (s) => {
   const m = {
     draft: "neutral",
