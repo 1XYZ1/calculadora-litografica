@@ -1,0 +1,662 @@
+---
+description: Guía para generar código legible con comentarios en español en lugares estratégicos
+alwaysApply: true
+---
+
+# Legibilidad de Código - Comentarios en Español
+
+Esta regla establece estándares para escribir código fácil de leer con comentarios estratégicos en español para desarrolladores hispanohablantes.
+
+## Principios Generales
+
+1. **Código en Inglés, Comentarios en Español**
+
+   - Variables, funciones, clases: siempre en inglés
+   - Comentarios explicativos: siempre en español
+   - Mensajes de usuario: en español
+
+2. **Comentarios Estratégicos, No Obvios**
+
+   - Comentar el "por qué", no el "qué"
+   - Agregar contexto de negocio cuando sea relevante
+   - Explicar decisiones de diseño no obvias
+
+3. **Ubicaciones Clave para Comentarios**
+   - Inicio de funciones complejas
+   - Lógica de negocio no trivial
+   - Operaciones matemáticas o cálculos
+   - Decisiones condicionales importantes
+   - Efectos secundarios (useEffect)
+   - Configuraciones y constantes
+
+## Patrones de Comentarios por Tipo de Código
+
+### 1. Componentes React
+
+```jsx
+// ✅ BUENO
+import React, { useState, useEffect } from "react";
+import { useFirebase } from "../context/FirebaseContext";
+
+/**
+ * Componente para gestionar cotizaciones de impresión
+ * Maneja el cálculo de costos, materiales y generación de PDFs
+ */
+export function Calculator() {
+  // Estado local para los items de la cotización
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const { user } = useFirebase();
+
+  // Cargar precios desde Firestore al montar el componente
+  useEffect(() => {
+    const fetchPrices = async () => {
+      // Obtener precios actualizados de la base de datos
+      const prices = await getPricesFromFirestore();
+      setBasePrices(prices);
+    };
+
+    fetchPrices();
+  }, []);
+
+  // Calcular el costo total incluyendo márgenes de ganancia
+  const calculateTotalCost = (item) => {
+    const materialCost = item.quantity * item.unitPrice;
+    const laborCost = item.machineHours * HOURLY_RATE;
+
+    // Aplicar margen de ganancia según el tipo de cliente
+    const profitMargin = user.isWholesale ? 0.15 : 0.3;
+
+    return (materialCost + laborCost) * (1 + profitMargin);
+  };
+
+  return (
+    <div className="container">
+      {/* Formulario de entrada de datos */}
+      <form onSubmit={handleSubmit}>{/* ... */}</form>
+    </div>
+  );
+}
+
+// ❌ MALO - Comentarios obvios o redundantes
+export function Calculator() {
+  // Definir estado de items
+  const [items, setItems] = useState([]); // ❌ Obvio
+
+  // Función para calcular el total
+  const calculateTotal = () => {
+    // ❌ Redundante con el nombre
+    // Sumar todos los items
+    return items.reduce((sum, item) => sum + item.price, 0); // ❌ Obvio
+  };
+}
+```
+
+### 2. Funciones de Utilidad y Cálculos
+
+```javascript
+// ✅ BUENO
+/**
+ * Calcula el costo de impresión basado en dimensiones y cantidad
+ * Considera: área de impresión, costos de plancha, máquina y acabados
+ */
+export function calculatePrintingCost(dimensions, quantity, options) {
+  const { width, height } = dimensions;
+
+  // Convertir dimensiones a metros cuadrados para el cálculo
+  const areaM2 = (width * height) / 10000;
+
+  // Determinar el tamaño de plancha según el área
+  // Planchas pequeñas (<0.5m²) usan tarifa reducida
+  const plateSize = areaM2 < 0.5 ? "small" : "standard";
+  const plateCost = PLATE_COSTS[plateSize];
+
+  // Calcular costo de papel por unidad
+  const paperCostPerUnit = areaM2 * options.paperPrice * WASTE_FACTOR;
+
+  // Descuento por volumen: >1000 unidades reciben 10% de descuento
+  const volumeDiscount = quantity > 1000 ? 0.1 : 0;
+
+  const subtotal = paperCostPerUnit * quantity + plateCost;
+  return subtotal * (1 - volumeDiscount);
+}
+
+// ❌ MALO
+export function calculatePrintingCost(dimensions, quantity, options) {
+  // Calcular área
+  const area = (dimensions.width * dimensions.height) / 10000;
+  // Obtener costo de plancha
+  const plate = area < 0.5 ? PLATE_COSTS.small : PLATE_COSTS.standard;
+  // Calcular papel
+  const paper = area * options.paperPrice * WASTE_FACTOR;
+  // Calcular descuento
+  const discount = quantity > 1000 ? 0.1 : 0;
+  // Retornar total
+  return (paper * quantity + plate) * (1 - discount);
+}
+```
+
+### 3. Hooks y Efectos
+
+```javascript
+// ✅ BUENO
+export function usePriceData() {
+  const [prices, setPrices] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const { user } = useFirebase();
+
+  useEffect(() => {
+    // Solo cargar precios si el usuario está autenticado
+    if (!user) return;
+
+    let unsubscribe;
+
+    const setupPriceListener = async () => {
+      // Suscripción en tiempo real a cambios de precios
+      // Esto permite actualizar automáticamente cuando un admin modifica precios
+      unsubscribe = onSnapshot(
+        doc(db, "artifacts", APP_ID, "public", "data"),
+        (snapshot) => {
+          if (snapshot.exists()) {
+            setPrices(snapshot.data());
+          }
+          setLoading(false);
+        },
+        (error) => {
+          console.error("Error al cargar precios:", error);
+          setLoading(false);
+        }
+      );
+    };
+
+    setupPriceListener();
+
+    // Cleanup: cancelar suscripción al desmontar
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [user]); // Reejecutar si cambia el usuario
+
+  return { prices, loading };
+}
+
+// ❌ MALO
+export function usePriceData() {
+  const [prices, setPrices] = useState(null);
+  const { user } = useFirebase();
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Cargar precios
+    const unsubscribe = onSnapshot(
+      doc(db, "artifacts", APP_ID, "public", "data"),
+      (snapshot) => {
+        setPrices(snapshot.data());
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
+
+  return { prices };
+}
+```
+
+### 4. Configuraciones y Constantes
+
+```javascript
+// ✅ BUENO
+// Configuración de Firebase para el entorno de producción
+export const getFirebaseConfig = () => {
+  return {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    // Storage bucket para almacenar PDFs generados
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  };
+};
+
+// Tamaños de plancha estándar en centímetros
+export const PLATE_SIZES = {
+  // Plancha pequeña para trabajos de hasta 35x50cm
+  SMALL: { width: 35, height: 50, cost: 15 },
+  // Plancha mediana para trabajos hasta 50x70cm
+  MEDIUM: { width: 50, height: 70, cost: 25 },
+  // Plancha grande para trabajos hasta 70x100cm
+  LARGE: { width: 70, height: 100, cost: 40 },
+};
+
+// Factor de desperdicio de papel (10% adicional)
+// Se usa para compensar mermas y pruebas de color
+export const WASTE_FACTOR = 1.1;
+
+// Costos operativos de máquina por hora (en USD)
+export const MACHINE_COSTS = {
+  offset: 45, // Impresora offset
+  digital: 30, // Impresora digital
+  cutting: 20, // Guillotina
+  folding: 15, // Plegadora
+};
+
+// ❌ MALO
+export const PLATE_SIZES = {
+  SMALL: { width: 35, height: 50, cost: 15 },
+  MEDIUM: { width: 50, height: 70, cost: 25 },
+  LARGE: { width: 70, height: 100, cost: 40 },
+};
+
+export const WASTE_FACTOR = 1.1;
+
+export const MACHINE_COSTS = {
+  offset: 45,
+  digital: 30,
+  cutting: 20,
+  folding: 15,
+};
+```
+
+### 5. Manejo de Errores y Validaciones
+
+```javascript
+// ✅ BUENO
+const handleSaveQuotation = async () => {
+  try {
+    // Validar que haya al menos un item en la cotización
+    if (items.length === 0) {
+      setError("Debe agregar al menos un item a la cotización");
+      return;
+    }
+
+    // Validar que todos los campos requeridos estén completos
+    const hasInvalidItems = items.some(
+      (item) => !item.description || item.quantity <= 0
+    );
+
+    if (hasInvalidItems) {
+      setError("Todos los items deben tener descripción y cantidad válida");
+      return;
+    }
+
+    setLoading(true);
+
+    // Guardar en Firestore con estructura de datos del usuario
+    const quotationRef = doc(
+      db,
+      "artifacts",
+      APP_ID,
+      "users",
+      user.uid,
+      "quotations",
+      quotationId
+    );
+
+    await setDoc(quotationRef, {
+      items,
+      total: calculateTotal(),
+      createdAt: serverTimestamp(),
+      status: "draft", // Estado inicial como borrador
+    });
+
+    setSuccess("Cotización guardada exitosamente");
+  } catch (error) {
+    // Manejar errores específicos de Firebase
+    if (error.code === "permission-denied") {
+      setError("No tiene permisos para guardar cotizaciones");
+    } else if (error.code === "unavailable") {
+      setError("Servicio no disponible. Intente más tarde");
+    } else {
+      setError("Error al guardar la cotización");
+      console.error("Error completo:", error);
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+// ❌ MALO
+const handleSaveQuotation = async () => {
+  try {
+    if (items.length === 0) {
+      setError("Debe agregar items");
+      return;
+    }
+
+    setLoading(true);
+    await setDoc(
+      doc(
+        db,
+        "artifacts",
+        APP_ID,
+        "users",
+        user.uid,
+        "quotations",
+        quotationId
+      ),
+      {
+        items,
+        total: calculateTotal(),
+        createdAt: serverTimestamp(),
+        status: "draft",
+      }
+    );
+
+    setSuccess("Guardado");
+  } catch (error) {
+    setError("Error");
+    console.error(error);
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+### 6. Operaciones Asíncronas y Peticiones
+
+```javascript
+// ✅ BUENO
+/**
+ * Sube el PDF generado a MinIO Storage
+ * Retorna la URL pública del archivo para compartir con clientes
+ */
+const uploadPdfToStorage = async (pdfBlob, userId, quotationId) => {
+  try {
+    // Convertir Blob a ArrayBuffer para compatibilidad con AWS SDK v3
+    const arrayBuffer = await pdfBlob.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
+
+    // Construir la ruta del archivo: quotations_pdf/{userId}/{quotationId}.pdf
+    // Esto mantiene los archivos organizados por usuario
+    const key = `quotations_pdf/${userId}/${quotationId}.pdf`;
+
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: "application/pdf", // Importante para que el navegador lo abra correctamente
+    });
+
+    // Enviar archivo a MinIO
+    await s3Client.send(command);
+
+    // Construir URL pública manualmente (MinIO en Railway no genera URLs firmadas)
+    const publicUrl = `${STORAGE_PUBLIC_URL}/${BUCKET_NAME}/${key}`;
+
+    return publicUrl;
+  } catch (error) {
+    console.error("Error al subir PDF a storage:", error);
+    throw new Error("No se pudo subir el PDF al servidor");
+  }
+};
+
+// ❌ MALO
+const uploadPdfToStorage = async (pdfBlob, userId, quotationId) => {
+  const arrayBuffer = await pdfBlob.arrayBuffer();
+  const buffer = new Uint8Array(arrayBuffer);
+  const key = `quotations_pdf/${userId}/${quotationId}.pdf`;
+
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: "application/pdf",
+    })
+  );
+
+  return `${STORAGE_PUBLIC_URL}/${BUCKET_NAME}/${key}`;
+};
+```
+
+### 7. JSX y Renderizado Condicional
+
+```jsx
+// ✅ BUENO
+return (
+  <div className="quotation-calculator">
+    {/* Header con información del cliente y fecha */}
+    <div className="header-section">
+      <h1 className="text-2xl font-bold">Nueva Cotización</h1>
+      <span className="text-gray-500">{formatDate(new Date())}</span>
+    </div>
+
+    {/* Formulario de entrada de datos del item */}
+    <form onSubmit={handleAddItem} className="item-form">
+      <div className="grid grid-cols-2 gap-4">
+        {/* Campo de descripción */}
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Descripción del trabajo"
+          className="border rounded px-3 py-2"
+        />
+
+        {/* Campo de cantidad con validación de mínimo */}
+        <input
+          type="number"
+          value={quantity}
+          onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value)))}
+          min="1"
+          placeholder="Cantidad"
+          className="border rounded px-3 py-2"
+        />
+      </div>
+
+      {/* Mostrar previsualización del costo solo si hay datos válidos */}
+      {description && quantity > 0 && (
+        <div className="cost-preview bg-blue-50 p-4 rounded mt-4">
+          <p className="text-sm text-gray-600">Costo estimado:</p>
+          <p className="text-2xl font-bold text-blue-600">
+            ${calculateEstimate().toFixed(2)}
+          </p>
+        </div>
+      )}
+    </form>
+
+    {/* Lista de items agregados a la cotización */}
+    <div className="items-list mt-6">
+      {items.length === 0 ? (
+        // Mensaje cuando no hay items
+        <p className="text-gray-400 text-center py-8">
+          No hay items en la cotización. Agregue uno para comenzar.
+        </p>
+      ) : (
+        // Tabla de items
+        <table className="w-full">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="px-4 py-2 text-left">Descripción</th>
+              <th className="px-4 py-2 text-right">Cantidad</th>
+              <th className="px-4 py-2 text-right">Costo Unitario</th>
+              <th className="px-4 py-2 text-right">Total</th>
+              <th className="px-4 py-2">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, index) => (
+              <tr key={item.id} className="border-b hover:bg-gray-50">
+                <td className="px-4 py-2">{item.description}</td>
+                <td className="px-4 py-2 text-right">{item.quantity}</td>
+                <td className="px-4 py-2 text-right">
+                  ${item.unitCost.toFixed(2)}
+                </td>
+                <td className="px-4 py-2 text-right font-semibold">
+                  ${(item.quantity * item.unitCost).toFixed(2)}
+                </td>
+                <td className="px-4 py-2 text-center">
+                  {/* Botón para eliminar item */}
+                  <button
+                    onClick={() => handleRemoveItem(item.id)}
+                    className="text-red-600 hover:text-red-800"
+                    title="Eliminar item"
+                  >
+                    ✕
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  </div>
+);
+
+// ❌ MALO - Sin comentarios en lugares complejos o condicionales
+return (
+  <div className="quotation-calculator">
+    <div className="header-section">
+      <h1 className="text-2xl font-bold">Nueva Cotización</h1>
+      <span className="text-gray-500">{formatDate(new Date())}</span>
+    </div>
+
+    <form onSubmit={handleAddItem} className="item-form">
+      <input
+        type="text"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
+      <input
+        type="number"
+        value={quantity}
+        onChange={(e) => setQuantity(parseInt(e.target.value))}
+      />
+
+      {description && quantity > 0 && (
+        <div className="cost-preview">${calculateEstimate().toFixed(2)}</div>
+      )}
+    </form>
+  </div>
+);
+```
+
+## Guías Específicas por Archivo
+
+### Archivos de Configuración (config/)
+
+- Comentar el propósito de cada configuración
+- Explicar por qué se usan ciertos valores
+- Documentar requisitos de variables de entorno
+
+### Archivos de Utilidades (utils/)
+
+- Documentar parámetros y valores de retorno
+- Explicar fórmulas matemáticas
+- Comentar casos especiales o edge cases
+
+### Componentes (components/)
+
+- Comentar props complejas o no obvias
+- Explicar lógica de estado compleja
+- Documentar side effects importantes
+
+### Páginas (pages/)
+
+- Comentar flujo general de la página
+- Explicar integraciones con servicios externos
+- Documentar manejo de estados de carga/error
+
+## Anti-Patrones a Evitar
+
+### ❌ No Hacer
+
+```javascript
+// ❌ Comentarios obvios
+const [user, setUser] = useState(null); // Estado del usuario
+
+// ❌ Comentarios que repiten el código
+// Sumar 1 al contador
+setCount(count + 1);
+
+// ❌ Comentarios desactualizados
+// Usar Firebase v8
+import { initializeApp } from "firebase/app"; // Esto es v9+
+
+// ❌ Comentarios en inglés
+// Load prices from database
+const loadPrices = async () => {
+  /* ... */
+};
+
+// ❌ Comentarios excesivos
+// Este es el componente principal
+// Renderiza el header, el formulario y la lista
+// Usa useState para manejar el estado
+// Usa useEffect para cargar datos
+export function MainComponent() {
+  /* ... */
+}
+```
+
+### ✅ Hacer
+
+```javascript
+// ✅ Comentarios que agregan contexto
+// Mantener usuario en null hasta completar autenticación
+const [user, setUser] = useState(null);
+
+// ✅ Explicar decisiones no obvias
+// Incrementar después del render para evitar race condition
+useEffect(() => {
+  setCount(count + 1);
+}, []);
+
+// ✅ Comentarios actualizados y precisos
+// Usar SDK modular de Firebase (v9+) para reducir bundle size
+import { initializeApp } from "firebase/app";
+
+// ✅ Siempre en español
+// Cargar precios actualizados desde Firestore
+const loadPrices = async () => {
+  /* ... */
+};
+
+// ✅ Comentario conciso y útil
+/**
+ * Componente principal del calculador de cotizaciones
+ * Integra cálculo de costos, selección de materiales y generación de PDFs
+ */
+export function MainComponent() {
+  /* ... */
+}
+```
+
+## Checklist de Legibilidad
+
+Antes de considerar el código completo, verificar:
+
+- [ ] ¿Todos los comentarios están en español?
+- [ ] ¿Los comentarios explican "por qué" en lugar de "qué"?
+- [ ] ¿Las funciones complejas tienen un comentario de descripción?
+- [ ] ¿Los cálculos matemáticos están explicados?
+- [ ] ¿Los useEffect tienen comentarios sobre su propósito?
+- [ ] ¿Las validaciones tienen contexto sobre por qué existen?
+- [ ] ¿Los casos especiales o edge cases están documentados?
+- [ ] ¿Las configuraciones tienen comentarios sobre su propósito?
+- [ ] ¿El código JSX complejo tiene comentarios en secciones clave?
+- [ ] ¿Se evitaron comentarios obvios o redundantes?
+
+## Resumen
+
+**Siempre comentar:**
+
+- Lógica de negocio compleja
+- Cálculos y fórmulas matemáticas
+- Decisiones de diseño no obvias
+- Efectos secundarios y sus propósitos
+- Validaciones y por qué existen
+- Configuraciones y constantes importantes
+- Casos especiales o edge cases
+
+**Nunca comentar:**
+
+- Código autoexplicativo
+- Obviedades del lenguaje
+- Repeticiones del código
+- Información desactualizada
+
+**Regla de oro:** Si al leer el código dentro de 6 meses no sabrías por qué se hizo así, agregar un comentario en español explicándolo.

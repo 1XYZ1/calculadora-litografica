@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { FirebaseProvider, useFirebase } from "./context/FirebaseContext";
 import Header from "./components/Header";
-import Calculator from "./pages/Calculator";
-import PriceAdmin from "./pages/PriceAdmin";
-import SavedQuotations from "./pages/SavedQuotations";
+import Calculator from "./pages/Calculator/Calculator";
+import PriceAdmin from "./pages/PriceAdmin/PriceAdmin";
+import SavedQuotations from "./pages/SavedQuotations/SavedQuotations";
 import AuthModal from "./components/AuthModal";
 
 function AppContent() {

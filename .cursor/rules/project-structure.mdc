@@ -1,0 +1,202 @@
+---
+description: Project directory structure and important files for the Litografía Pro application
+alwaysApply: true
+---
+
+# Litografía Pro - Project Structure
+
+This document outlines the directory structure and important files for the Litografía Pro quotation system.
+
+## Project Overview
+
+**Litografía Pro** is a quotation and price management system for printing and lithography businesses built with React, Vite, Tailwind CSS, and Firebase.
+
+## Root Directory Structure
+
+```
+litografia/
+├── src/                    # Source code directory
+├── dist/                   # Production build output (generated)
+├── node_modules/           # Dependencies (generated)
+├── .cursor/                # Cursor IDE rules and configuration
+├── index.html              # Main HTML entry point
+├── package.json            # Project dependencies and scripts
+├── package-lock.json       # Locked dependency versions
+├── vite.config.js          # Vite bundler configuration
+├── tailwind.config.js      # Tailwind CSS configuration
+├── postcss.config.js       # PostCSS configuration
+└── README.md               # Project documentation
+```
+
+## Source Directory (`src/`)
+
+### Main Application Files
+
+- **`main.jsx`** - Application entry point, renders the root React component
+- **`App.jsx`** - Main application component with routing logic and authentication flow
+- **`index.css`** - Global styles and Tailwind CSS imports
+
+### Components (`src/components/`)
+
+Reusable UI components used throughout the application:
+
+- **`Header.jsx`** - Top navigation bar with page navigation and user menu
+- **`AuthModal.jsx`** - Authentication modal for Google sign-in
+- **`ModalMessage.jsx`** - Generic modal for displaying messages
+- **`ConfirmationModal.jsx`** - Modal for user confirmations
+- **`CostBreakdownModal.jsx`** - Detailed cost breakdown display
+- **`QuotationPreviewModal.jsx`** - Preview quotation before saving/generating PDF
+- **`LayoutSketch.jsx`** - Visual representation of print layout dimensions
+- **`TroquelLayoutSketch.jsx`** - Visual representation of die-cut layouts
+
+### Pages (`src/pages/`)
+
+Main application pages/views:
+
+- **`Calculator.jsx`** - Main quotation calculator interface
+
+  - Input quotation details (dimensions, quantity, materials)
+  - Add multiple items to a quotation
+  - Calculate costs and generate totals
+  - Save quotations or generate PDFs
+
+- **`PriceAdmin.jsx`** - Price management interface (admin)
+
+  - Update paper prices
+  - Manage plate sizes and prices
+  - Configure machine costs
+  - Adjust finishing prices (UV, lamination, etc.)
+  - Set profit margin percentages
+  - Update BCV dollar exchange rate
+
+- **`SavedQuotations.jsx`** - View and manage saved quotations
+  - List all saved quotations
+  - Load existing quotations for editing
+  - Delete quotations
+  - Generate PDFs from saved quotations
+
+### Configuration (`src/config/`)
+
+Application configuration files:
+
+- **`firebase.js`** - Firebase initialization and configuration
+
+  - Firestore database setup
+  - Authentication setup
+  - Environment variable management
+
+- **`storage.js`** - MinIO/S3 storage configuration
+  - AWS SDK S3 client setup
+  - PDF file storage and retrieval
+  - Public URL generation
+
+### Context (`src/context/`)
+
+React context providers for state management:
+
+- **`FirebaseContext.jsx`** - Firebase context provider
+  - User authentication state
+  - Google login functionality
+  - Logout functionality
+  - User data management
+
+### Utils (`src/utils/`)
+
+Utility functions and constants:
+
+- **`calculations.js`** - Calculation logic for quotations
+
+  - Cost calculations for materials
+  - Price formulas
+  - Utility calculation functions
+
+- **`constants.js`** - Application-wide constants
+  - Default values
+  - Configuration constants
+  - Material type definitions
+
+## Configuration Files
+
+### Build & Development
+
+- **`vite.config.js`** - Vite configuration
+
+  - Development server settings
+  - Build optimization
+  - Plugin configuration
+
+- **`tailwind.config.js`** - Tailwind CSS customization
+
+  - Theme configuration
+  - Custom colors and spacing
+  - Plugin extensions
+
+- **`postcss.config.js`** - PostCSS processing
+  - Tailwind CSS integration
+  - Autoprefixer setup
+
+### Dependencies
+
+- **`package.json`** - Project metadata and dependencies
+  - Main dependencies: React, Firebase, AWS SDK S3
+  - Dev dependencies: Vite, Tailwind CSS, PostCSS
+  - Scripts: `dev`, `build`, `preview`
+
+## Key Technologies
+
+- **React 18** - UI library with hooks
+- **Vite** - Fast build tool and dev server
+- **Tailwind CSS** - Utility-first CSS framework
+- **Firebase** - Backend services
+  - Firestore - NoSQL database
+  - Authentication - Google OAuth
+- **AWS SDK S3** - MinIO/S3 storage client
+- **jsPDF & html2canvas** - PDF generation
+
+## File Naming Conventions
+
+- **Components**: PascalCase with `.jsx` extension (e.g., `AuthModal.jsx`)
+- **Pages**: PascalCase with `.jsx` extension (e.g., `Calculator.jsx`)
+- **Utils**: camelCase with `.js` extension (e.g., `calculations.js`)
+- **Config**: camelCase with `.js` extension (e.g., `firebase.js`)
+
+## Important Notes
+
+1. **Authentication Required**: All main features require Google authentication
+2. **Environment Variables**: Requires `.env` file with Firebase and MinIO credentials
+3. **Storage**: PDFs are stored in MinIO (S3-compatible) storage on Railway
+4. **Database Structure**: Firestore collections follow the pattern:
+   - `/artifacts/{appId}/public/data/` - Shared data (prices)
+   - `/artifacts/{appId}/users/{userId}/` - User-specific data (quotations)
+
+## Common Development Tasks
+
+### Adding New Components
+
+- Place in `src/components/`
+- Use functional components with hooks
+- Import in parent components as needed
+
+### Adding New Pages
+
+- Place in `src/pages/`
+- Add navigation logic in `App.jsx`
+- Add navigation link in `Header.jsx`
+
+### Modifying Calculations
+
+- Edit `src/utils/calculations.js`
+- Update constants in `src/utils/constants.js` if needed
+
+### Updating Prices
+
+- Use the Price Admin page in the running application
+- Or modify Firestore data directly in Firebase Console
+
+## Development Workflow
+
+1. **Start dev server**: `npm run dev`
+2. **Build for production**: `npm run build`
+3. **Preview production build**: `npm run preview`
+4. **Edit source files**: Changes hot-reload in development
+5. **Test authentication**: Requires Firebase credentials in `.env`
