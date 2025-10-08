@@ -19,7 +19,7 @@ function ProfileSelector({
 
   return (
     <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl shadow-md border border-indigo-100 mb-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         {/* Selector de perfil */}
         <div className="flex-1">
           <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -29,7 +29,7 @@ function ProfileSelector({
             <select
               value={selectedProfileId || ""}
               onChange={(e) => onSelectProfile(e.target.value)}
-              className="w-full appearance-none px-4 py-3 pr-10 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white shadow-sm cursor-pointer"
+              className="w-full appearance-none px-4 py-3 pr-10 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white shadow-sm cursor-pointer hover:border-indigo-300 transition-colors"
               disabled={loading || profiles.length === 0}
             >
               {profiles.length === 0 ? (
@@ -58,11 +58,11 @@ function ProfileSelector({
         </div>
 
         {/* Botones de acción */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 md:mb-0.5">
           {/* Botón Nuevo Perfil */}
           <button
             onClick={onCreateProfile}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 flex items-center gap-2"
+            className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 flex items-center gap-2"
             disabled={loading}
           >
             <svg
@@ -85,7 +85,7 @@ function ProfileSelector({
           {selectedProfileId && (
             <button
               onClick={onDuplicateProfile}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 flex items-center gap-2"
+              className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 flex items-center gap-2"
               disabled={loading}
             >
               <svg
@@ -109,7 +109,7 @@ function ProfileSelector({
           {selectedProfileId && (
             <button
               onClick={onEditProfile}
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 flex items-center gap-2"
+              className="px-4 py-3 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 flex items-center gap-2"
               disabled={loading}
             >
               <svg
@@ -125,7 +125,7 @@ function ProfileSelector({
                   d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                 />
               </svg>
-              Editar
+              Cambiar nombre
             </button>
           )}
 
@@ -133,7 +133,7 @@ function ProfileSelector({
           {selectedProfileId && (
             <button
               onClick={onDeleteProfile}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 flex items-center gap-2"
+              className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 flex items-center gap-2"
               disabled={loading}
             >
               <svg
@@ -154,16 +154,6 @@ function ProfileSelector({
           )}
         </div>
       </div>
-
-      {/* Mensaje informativo si hay perfil seleccionado */}
-      {selectedProfile && (
-        <div className="mt-4 text-sm text-gray-600 bg-white p-3 rounded-lg border border-indigo-100">
-          <span className="font-medium">Perfil actual:</span>{" "}
-          <span className="text-indigo-700 font-semibold">
-            {selectedProfile.name}
-          </span>
-        </div>
-      )}
 
       {/* Mensaje si no hay perfiles */}
       {profiles.length === 0 && (

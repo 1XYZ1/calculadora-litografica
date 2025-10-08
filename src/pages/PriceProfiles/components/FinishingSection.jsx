@@ -161,7 +161,7 @@ function FinishingSection({
             disabled={loadingItemId === "uv_all" || !uvHasChanges}
             className={`${
               colors.button
-            } text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 relative ${
+            } text-white font-bold py-2 md:py-3 px-3 md:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 relative text-sm md:text-base ${
               uvHasChanges ? "ring-2 ring-amber-400 ring-offset-2" : ""
             }`}
           >
@@ -202,7 +202,7 @@ function FinishingSection({
                     clipRule="evenodd"
                   />
                 </svg>
-                Actualizar Todos los UV
+                Actualizar
                 {uvHasChanges && (
                   <span className="absolute -top-1 -right-1 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
@@ -265,7 +265,7 @@ function FinishingSection({
             }
             className={`${
               colors.button
-            } text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 relative ${
+            } text-white font-bold py-2 md:py-3 px-3 md:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 relative text-sm md:text-base ${
               otherFinishingsHaveChanges
                 ? "ring-2 ring-amber-400 ring-offset-2"
                 : ""
@@ -308,7 +308,7 @@ function FinishingSection({
                     clipRule="evenodd"
                   />
                 </svg>
-                Actualizar Todos los Acabados
+                Actualizar
                 {otherFinishingsHaveChanges && (
                   <span className="absolute -top-1 -right-1 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>

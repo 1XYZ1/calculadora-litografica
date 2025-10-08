@@ -59,7 +59,12 @@ function PriceProfiles() {
     notification,
     selectedProfileId
   );
-  const materialsMgmt = useMaterialsManagement(notification, selectedProfileId);
+  const materialsMgmt = useMaterialsManagement(
+    notification,
+    selectedProfileId,
+    priceData.plateSizes,
+    priceData.machineTypes
+  );
   const finishingMgmt = useFinishingManagement(
     priceData.finishingPrices,
     notification,
@@ -214,7 +219,18 @@ function PriceProfiles() {
             {/* Sección de impresión digital */}
             <DigitalPrintingSection
               finishingPrices={priceData.finishingPrices}
-              {...finishingMgmt}
+              digitalQuarterTiroInput={finishingMgmt.digitalQuarterTiroInput}
+              setDigitalQuarterTiroInput={
+                finishingMgmt.setDigitalQuarterTiroInput
+              }
+              digitalQuarterTiroRetiroInput={
+                finishingMgmt.digitalQuarterTiroRetiroInput
+              }
+              setDigitalQuarterTiroRetiroInput={
+                finishingMgmt.setDigitalQuarterTiroRetiroInput
+              }
+              updateAllDigitalPrinting={finishingMgmt.updateAllDigitalPrinting}
+              loadingItemId={finishingMgmt.loadingItemId}
             />
 
             {/* Sección de acabados */}

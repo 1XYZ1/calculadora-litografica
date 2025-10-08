@@ -29,6 +29,12 @@ export function usePaperManagement(papers, notification, priceProfileId) {
   // Estado de inputs para actualizar precios de papeles existentes
   const [paperPriceInputs, setPaperPriceInputs] = useState({});
 
+  // Reiniciar formulario de nuevo papel cuando cambia el perfil
+  useEffect(() => {
+    setNewPaperName("");
+    setNewPaperPrice("");
+  }, [priceProfileId]);
+
   // Sincronizar los inputs con los precios actuales de papers
   // Solo sincronizar cuando cambia el perfil, NO cada vez que papers se actualiza
   // Esto evita que los inputs se sobrescriban mientras el usuario está editando
@@ -182,6 +188,76 @@ export function usePaperManagement(papers, notification, priceProfileId) {
     [userId, db, appId, notification, priceProfileId]
   );
 
+  // Estado de loading para actualización masiva
+  const [loadingAll, setLoadingAll] = useState(false);
+
+  // Función para actualizar TODOS los precios de papeles de una vez
+  const updateAllPaperPrices = useCallback(async () => {
+    if (!userId) {
+      notification.showError(ADMIN_ERROR_MESSAGES.AUTH_REQUIRED);
+      return;
+    }
+
+    if (!priceProfileId) {
+      notification.showError("Debe seleccionar un perfil de precios");
+      return;
+    }
+
+    // Validar todos los precios antes de actualizar
+    const validatedPrices = {};
+
+    for (const [paperId, value] of Object.entries(paperPriceInputs)) {
+      if (!value) continue; // Skip empty inputs
+
+      const paperName = papers.find((p) => p.id === paperId)?.name;
+      const validation = validatePrice(value, paperName);
+
+      if (!validation.isValid) {
+        notification.showError(validation.error);
+        return;
+      }
+      validatedPrices[paperId] = validation.value;
+    }
+
+    if (Object.keys(validatedPrices).length === 0) {
+      notification.showError("No hay cambios pendientes para actualizar");
+      return;
+    }
+
+    setLoadingAll(true);
+    try {
+      // Actualizar todos los precios en paralelo
+      const updatePromises = Object.entries(validatedPrices).map(
+        ([paperId, value]) => {
+          const docRef = doc(
+            db,
+            `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}/papers`,
+            paperId
+          );
+          return updateDoc(docRef, { pricePerSheet: value });
+        }
+      );
+
+      await Promise.all(updatePromises);
+      notification.showSuccess(
+        `${Object.keys(validatedPrices).length} precios de papel actualizados`
+      );
+    } catch (e) {
+      console.error("Error updating paper prices:", e);
+      notification.showError("Error al actualizar los precios de papel");
+    } finally {
+      setLoadingAll(false);
+    }
+  }, [
+    userId,
+    paperPriceInputs,
+    papers,
+    db,
+    appId,
+    notification,
+    priceProfileId,
+  ]);
+
   return {
     // Estados de formulario
     newPaperName,
@@ -195,5 +271,9 @@ export function usePaperManagement(papers, notification, priceProfileId) {
     addPaper,
     updatePaperPrice,
     deletePaper,
+    updateAllPaperPrices,
+
+    // Loading states
+    loadingAll,
   };
 }

@@ -272,6 +272,72 @@ export function useFinishingManagement(
     troqueladoPriceInput,
   ]);
 
+  // Función para actualizar AMBOS precios de impresión digital de una vez
+  const updateAllDigitalPrinting = useCallback(async () => {
+    if (!userId) {
+      notification.showError(ADMIN_ERROR_MESSAGES.AUTH_REQUIRED_ACTION);
+      return;
+    }
+
+    if (!priceProfileId) {
+      notification.showError("Debe seleccionar un perfil de precios");
+      return;
+    }
+
+    // Preparar precios digitales a actualizar
+    const digitalPrices = {
+      digital_quarter_tiro: digitalQuarterTiroInput,
+      digital_quarter_tiro_retiro: digitalQuarterTiroRetiroInput,
+    };
+
+    // Validar ambos precios antes de actualizar
+    const validatedPrices = {};
+
+    for (const [id, value] of Object.entries(digitalPrices)) {
+      const validation = validatePrice(value, formatIdForMessage(id));
+      if (!validation.isValid) {
+        notification.showError(validation.error);
+        return;
+      }
+      validatedPrices[id] = validation.value;
+    }
+
+    setLoadingItemId("digital_all");
+    try {
+      // Actualizar ambos precios digitales en paralelo
+      const updatePromises = Object.entries(validatedPrices).map(
+        ([id, value]) => {
+          const docRef = doc(
+            db,
+            `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}/finishingPrices`,
+            id
+          );
+          return setDoc(docRef, { price: value }, { merge: true });
+        }
+      );
+
+      await Promise.all(updatePromises);
+      notification.showSuccess(
+        "Precios de impresión digital actualizados correctamente"
+      );
+    } catch (e) {
+      console.error("Error updating digital printing prices:", e);
+      notification.showError(
+        "Error al actualizar los precios de impresión digital"
+      );
+    } finally {
+      setLoadingItemId(null);
+    }
+  }, [
+    userId,
+    db,
+    appId,
+    notification,
+    priceProfileId,
+    digitalQuarterTiroInput,
+    digitalQuarterTiroRetiroInput,
+  ]);
+
   return {
     // Inputs de UV
     uvPricesInput,
@@ -299,6 +365,7 @@ export function useFinishingManagement(
     updateFinishingPrice,
     updateAllUvPrices,
     updateAllOtherFinishings,
+    updateAllDigitalPrinting,
 
     // Estado de loading granular por item
     loadingItemId,
