@@ -25,10 +25,10 @@ const Step4QuotationSummary = ({
     <div className="space-y-4 sm:space-y-6 animate-fadeIn">
       <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
         <div className="mb-4 sm:mb-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
             Resumen del Presupuesto
           </h2>
-          <p className="text-xs sm:text-sm text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Revisa todos los items y guarda o previsualiza tu presupuesto
           </p>
         </div>
@@ -36,10 +36,10 @@ const Step4QuotationSummary = ({
         {/* Lista de items */}
         <div className="mb-6 sm:mb-8">
           <div className="flex justify-between items-center mb-3 sm:mb-4">
-            <h3 className="text-base sm:text-lg font-bold text-gray-800">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800">
               Items del Presupuesto
             </h3>
-            <span className="text-xs sm:text-sm text-gray-600">
+            <span className="text-sm sm:text-base text-gray-600">
               {items.length} {items.length === 1 ? "item" : "items"}
             </span>
           </div>
@@ -57,7 +57,7 @@ const Step4QuotationSummary = ({
           <div className="mb-6 sm:mb-8">
             <button
               onClick={onAddNewItem}
-              className="w-full border-2 border-dashed border-blue-300 hover:border-blue-500 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2.5 sm:py-3 rounded-lg transition-all flex items-center justify-center space-x-2 min-h-[44px] text-sm sm:text-base"
+              className="w-full border-2 border-dashed border-blue-300 hover:border-blue-500 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-3 sm:py-4 rounded-lg transition-all flex items-center justify-center space-x-2 min-h-[48px] text-base sm:text-lg"
             >
               <svg
                 className="w-4 h-4 sm:w-5 sm:h-5"
@@ -108,7 +108,7 @@ const Step4QuotationSummary = ({
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-xs sm:text-sm text-yellow-700">
+              <p className="text-sm sm:text-base text-yellow-700">
                 <strong>Atención:</strong> No has agregado ningún item al
                 presupuesto. Debes volver a los pasos anteriores y agregar al
                 menos un item para poder guardar el presupuesto.
@@ -133,7 +133,7 @@ const Step4QuotationSummary = ({
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-xs sm:text-sm text-green-700">
+              <p className="text-sm sm:text-base text-green-700">
                 <strong>¡Listo!</strong> Tu presupuesto está completo. Puedes
                 guardarlo, generar una vista previa en PDF, o agregar más items
                 si lo necesitas.

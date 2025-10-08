@@ -21,20 +21,20 @@ const Step3ItemSummary = ({
     <div className="space-y-4 sm:space-y-6 animate-fadeIn">
       <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
         <div className="mb-4 sm:mb-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
             Resumen del Item
           </h2>
-          <p className="text-xs sm:text-sm text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Revisa el costo calculado y los detalles antes de agregar
           </p>
         </div>
 
         {/* Nombre del item */}
         <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-          <h3 className="text-base sm:text-lg font-bold text-blue-800 mb-1">
+          <h3 className="text-lg sm:text-xl font-bold text-blue-800 mb-2">
             {currentItem.quotationName || "Sin nombre"}
           </h3>
-          <p className="text-xs sm:text-sm text-blue-600">
+          <p className="text-sm sm:text-base text-blue-600">
             {currentItem.totalPieces} unidades • {currentItem.pieceWidthCm} x{" "}
             {currentItem.pieceHeightCm} cm
           </p>
@@ -49,7 +49,7 @@ const Step3ItemSummary = ({
             onClick={() => setShowBreakdown(!showBreakdown)}
             className="w-full flex items-center justify-between p-3 sm:p-4 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors min-h-[44px]"
           >
-            <span className="text-sm sm:text-base font-semibold text-gray-700">
+            <span className="text-base sm:text-lg font-semibold text-gray-700">
               Ver desglose de costos
             </span>
             <svg
@@ -71,14 +71,14 @@ const Step3ItemSummary = ({
 
           {showBreakdown && (
             <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3 animate-fadeIn">
-              <h4 className="font-bold text-gray-800 mb-3">
+              <h4 className="text-lg font-bold text-gray-800 mb-3">
                 Desglose de Costos
               </h4>
 
               {/* Costos de papel */}
               {itemResult.paperCost > 0 && (
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-sm text-gray-700">Papel</span>
+                  <span className="text-base text-gray-700">Papel</span>
                   <span className="font-semibold text-gray-800">
                     ${itemResult.paperCost.toFixed(2)}
                   </span>
@@ -88,7 +88,7 @@ const Step3ItemSummary = ({
               {/* Costos de plancha */}
               {itemResult.plateCost > 0 && (
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-sm text-gray-700">Plancha</span>
+                  <span className="text-base text-gray-700">Plancha</span>
                   <span className="font-semibold text-gray-800">
                     ${itemResult.plateCost.toFixed(2)}
                   </span>
@@ -98,7 +98,7 @@ const Step3ItemSummary = ({
               {/* Costos de máquina */}
               {itemResult.machineCost > 0 && (
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-sm text-gray-700">Máquina</span>
+                  <span className="text-base text-gray-700">Máquina</span>
                   <span className="font-semibold text-gray-800">
                     ${itemResult.machineCost.toFixed(2)}
                   </span>
@@ -108,7 +108,7 @@ const Step3ItemSummary = ({
               {/* Costos de acabados */}
               {itemResult.finishingCost > 0 && (
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-sm text-gray-700">Acabados</span>
+                  <span className="text-base text-gray-700">Acabados</span>
                   <span className="font-semibold text-gray-800">
                     ${itemResult.finishingCost.toFixed(2)}
                   </span>
@@ -118,7 +118,7 @@ const Step3ItemSummary = ({
               {/* Margen de ganancia */}
               {itemResult.profitAmount > 0 && (
                 <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-sm text-gray-700">
+                  <span className="text-base text-gray-700">
                     Margen de Ganancia
                   </span>
                   <span className="font-semibold text-green-600">
@@ -129,8 +129,8 @@ const Step3ItemSummary = ({
 
               {/* Total */}
               <div className="flex justify-between items-center py-3 pt-4 border-t-2 border-gray-300">
-                <span className="text-base font-bold text-gray-800">Total</span>
-                <span className="text-xl font-extrabold text-blue-600">
+                <span className="text-lg font-bold text-gray-800">Total</span>
+                <span className="text-2xl font-extrabold text-blue-600">
                   ${itemResult.totalGeneral.toFixed(2)}
                 </span>
               </div>
@@ -156,37 +156,6 @@ const Step3ItemSummary = ({
           currentItem={currentItem}
           requiredFullSheets={itemResult.requiredFullSheets}
         />
-
-        {/* Botón de acción */}
-        <div className="mt-6 sm:mt-8">
-          <button
-            onClick={onAddItemToQuotation}
-            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3 sm:py-4 rounded-lg shadow-lg transition-all transform hover:scale-105 active:scale-100 flex items-center justify-center space-x-2 min-h-[44px] text-sm sm:text-base"
-          >
-            <svg
-              className="w-5 h-5 sm:w-6 sm:h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d={
-                  editingItemId
-                    ? "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    : "M12 6v6m0 0v6m0-6h6m-6 0H6"
-                }
-              />
-            </svg>
-            <span>
-              {editingItemId
-                ? "Actualizar Item en el Presupuesto"
-                : "Agregar Item al Presupuesto"}
-            </span>
-          </button>
-        </div>
       </div>
 
       {/* Indicador de ayuda */}
@@ -206,7 +175,7 @@ const Step3ItemSummary = ({
             </svg>
           </div>
           <div className="ml-3">
-            <p className="text-xs sm:text-sm text-green-700">
+            <p className="text-sm sm:text-base text-green-700">
               <strong>Tip:</strong> Revisa el desglose de costos y la
               visualización del layout para confirmar que todo esté correcto.
               Una vez que agregues el item, podrás continuar agregando más items

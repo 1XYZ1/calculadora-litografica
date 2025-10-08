@@ -8,26 +8,56 @@ export function useStepperNavigation() {
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState(new Set());
 
-  // Navegar a un paso específico
-  const goToStep = useCallback((stepNumber) => {
-    if (stepNumber >= 1 && stepNumber <= 4) {
-      setCurrentStep(stepNumber);
+  // Función para scroll al inicio completo de la página
+  const scrollToTop = useCallback(() => {
+    // Método 1: Scroll del window principal
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+
+    // Método 2: Scroll del document element (para casos donde window no funciona)
+    if (document.documentElement) {
+      document.documentElement.scrollTop = 0;
     }
+
+    // Método 3: Scroll del body (fallback adicional)
+    if (document.body) {
+      document.body.scrollTop = 0;
+    }
+
+    // Método 4: Scroll inmediato sin animación como fallback
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 100);
   }, []);
+
+  // Navegar a un paso específico
+  const goToStep = useCallback(
+    (stepNumber) => {
+      if (stepNumber >= 1 && stepNumber <= 4) {
+        setCurrentStep(stepNumber);
+        // Scroll automático al inicio completo de la página
+        scrollToTop();
+      }
+    },
+    [scrollToTop]
+  );
 
   // Avanzar al siguiente paso
   const nextStep = useCallback(() => {
     if (currentStep < 4) {
       setCurrentStep((prev) => prev + 1);
+      // Scroll automático al inicio completo de la página
+      scrollToTop();
     }
-  }, [currentStep]);
+  }, [currentStep, scrollToTop]);
 
   // Retroceder al paso anterior
   const previousStep = useCallback(() => {
     if (currentStep > 1) {
       setCurrentStep((prev) => prev - 1);
+      // Scroll automático al inicio completo de la página
+      scrollToTop();
     }
-  }, [currentStep]);
+  }, [currentStep, scrollToTop]);
 
   // Marcar un paso como completado
   const markStepComplete = useCallback((step) => {

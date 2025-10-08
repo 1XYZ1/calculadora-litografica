@@ -31,10 +31,10 @@ const Step2MaterialsFinishing = ({
       {!isDigital && (
         <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
           <div className="mb-4 sm:mb-6">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
               Materiales y Equipos
             </h2>
-            <p className="text-xs sm:text-sm text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               Selecciona el papel, plancha y máquina para impresión offset
             </p>
           </div>
@@ -52,10 +52,10 @@ const Step2MaterialsFinishing = ({
       {/* Acabados */}
       <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
         <div className="mb-4 sm:mb-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
             Acabados
           </h2>
-          <p className="text-xs sm:text-sm text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Agrega acabados especiales a tu trabajo (opcional)
           </p>
         </div>
@@ -68,7 +68,7 @@ const Step2MaterialsFinishing = ({
         {/* Indicador visual de acabados seleccionados */}
         {hasAnyFinishing && (
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
-            <p className="text-xs sm:text-sm font-semibold text-orange-800 mb-2">
+            <p className="text-sm sm:text-base font-semibold text-orange-800 mb-2">
               Acabados seleccionados:
             </p>
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -113,7 +113,7 @@ const Step2MaterialsFinishing = ({
         {/* Mensaje si no hay acabados */}
         {!hasAnyFinishing && (
           <div className="mt-4 sm:mt-6 bg-gray-50 border-2 border-dashed border-gray-300 p-4 sm:p-6 rounded-lg text-center">
-            <p className="text-gray-500 text-xs sm:text-sm">
+            <p className="text-gray-500 text-sm sm:text-base">
               No has seleccionado ningún acabado.
               <br />
               Puedes continuar sin acabados o agregar algunos para mejorar el
@@ -140,7 +140,7 @@ const Step2MaterialsFinishing = ({
             </svg>
           </div>
           <div className="ml-3">
-            <p className="text-xs sm:text-sm text-green-700">
+            <p className="text-sm sm:text-base text-green-700">
               <strong>Tip:</strong>{" "}
               {isDigital
                 ? "En impresión digital, algunos acabados como Remate, Signado y Troquelado no están disponibles."

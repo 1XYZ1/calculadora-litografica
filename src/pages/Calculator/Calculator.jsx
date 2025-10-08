@@ -30,7 +30,7 @@ import { MESSAGES } from "../../utils/constants";
 function QuotationCalculator({
   loadedQuotation = null,
   setLoadedQuotation = () => {},
-  onNavigateToClients = () => {},
+  onNavigateToPage = () => {},
 }) {
   const { db, appId, userId } = useFirebase();
 
@@ -239,9 +239,21 @@ function QuotationCalculator({
   const handleCancelEdit = useCallback(() => {
     resetQuotation();
     resetItemForm();
-    goToStep(1);
-    showToast("Edición cancelada", "info");
-  }, [resetQuotation, resetItemForm, goToStep, showToast]);
+    setLoadedQuotation(null);
+    showToast(
+      "Edición cancelada. Redirigiendo a Cotizaciones Guardadas...",
+      "info"
+    );
+    setTimeout(() => {
+      onNavigateToPage("savedQuotations");
+    }, 500);
+  }, [
+    resetQuotation,
+    resetItemForm,
+    setLoadedQuotation,
+    showToast,
+    onNavigateToPage,
+  ]);
 
   // Handler: Vista previa
   const handleShowPreview = useCallback(() => {
@@ -403,7 +415,7 @@ function QuotationCalculator({
           setClientId={setClientId}
           setClientName={setClientName}
           onBeginQuotation={handleBeginQuotation}
-          onNavigateToClients={onNavigateToClients}
+          onNavigateToClients={() => onNavigateToPage("clients")}
         />
       ) : (
         /* Contenedor principal del Stepper */
@@ -447,15 +459,25 @@ function QuotationCalculator({
             {renderCurrentStep()}
           </div>
 
-          {/* Botones de navegación - No mostrar en paso 4 (resumen final) */}
-          {currentStep < 4 && (
+          {/* Botones de navegación - Pasos 1, 2 y 3 */}
+          {currentStep <= 3 && (
             <StepNavigationButtons
               currentStep={currentStep}
               onPrevious={handlePreviousStep}
               onNext={handleNextStep}
               isFirstStep={currentStep === 1}
-              isLastStep={currentStep === 3}
+              isLastStep={false}
               isValid={true}
+              customNextAction={
+                currentStep === 3 ? handleAddItemToQuotation : null
+              }
+              customNextLabel={
+                currentStep === 3
+                  ? editingItemId
+                    ? "Actualizar Item"
+                    : "Agregar Item"
+                  : null
+              }
             />
           )}
         </div>

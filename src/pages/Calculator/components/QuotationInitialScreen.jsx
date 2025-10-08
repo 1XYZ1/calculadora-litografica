@@ -35,15 +35,19 @@ export default function QuotationInitialScreen({
       setSelectedClient(null);
       setClientId(null);
       setClientName("");
-      return;
+    } else {
+      const client = clients.find((c) => c.id === selectedId);
+      if (client) {
+        setSelectedClient(client);
+        setClientId(client.id);
+        setClientName(client.name);
+      }
     }
 
-    const client = clients.find((c) => c.id === selectedId);
-    if (client) {
-      setSelectedClient(client);
-      setClientId(client.id);
-      setClientName(client.name);
-    }
+    // Quitar el foco del select después de la selección
+    setTimeout(() => {
+      e.target.blur();
+    }, 100);
   };
 
   // Verificar si se puede comenzar la cotización
@@ -84,7 +88,7 @@ export default function QuotationInitialScreen({
           <div>
             <label
               htmlFor="quotation-name"
-              className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2"
+              className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2"
             >
               Nombre del Presupuesto
               <span className="text-red-500 ml-1">*</span>
@@ -95,7 +99,7 @@ export default function QuotationInitialScreen({
               value={mainQuotationName}
               onChange={(e) => setMainQuotationName(e.target.value)}
               placeholder="Ej: Catálogo Primavera 2024"
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
           </div>
 
@@ -103,14 +107,14 @@ export default function QuotationInitialScreen({
           <div>
             <label
               htmlFor="client-select"
-              className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2"
+              className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2"
             >
               Cliente
               <span className="text-red-500 ml-1">*</span>
             </label>
 
             {loading ? (
-              <div className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg bg-gray-50 text-gray-400">
+              <div className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-base border border-gray-300 rounded-lg bg-gray-50 text-gray-400">
                 Cargando clientes...
               </div>
             ) : clients.length === 0 ? (
@@ -129,10 +133,10 @@ export default function QuotationInitialScreen({
                     d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                   />
                 </svg>
-                <p className="text-sm sm:text-base text-gray-600 font-medium mb-1 sm:mb-2">
+                <p className="text-base sm:text-base text-gray-600 font-medium mb-1 sm:mb-2">
                   No hay clientes registrados
                 </p>
-                <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
+                <p className="text-sm sm:text-sm text-gray-500 mb-3 sm:mb-4">
                   Debes crear al menos un cliente antes de comenzar una
                   cotización
                 </p>
@@ -163,7 +167,7 @@ export default function QuotationInitialScreen({
                   id="client-select"
                   value={clientId || ""}
                   onChange={handleClientChange}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   <option value="">Selecciona un cliente</option>
                   {clients.map((client) => (
@@ -177,7 +181,7 @@ export default function QuotationInitialScreen({
                 {/* Botón para crear nuevo cliente */}
                 <button
                   onClick={onNavigateToClients}
-                  className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-medium flex items-center min-h-[44px]"
+                  className="text-blue-600 hover:text-blue-700 text-sm sm:text-sm font-medium flex items-center min-h-[44px]"
                 >
                   <svg
                     className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1"
@@ -216,16 +220,16 @@ export default function QuotationInitialScreen({
                   </svg>
                 </div>
                 <div className="ml-3 flex-1">
-                  <p className="text-xs sm:text-sm font-medium text-blue-800">
+                  <p className="text-sm sm:text-sm font-medium text-blue-800">
                     {selectedClient.name}
                   </p>
                   {selectedClient.company && (
-                    <p className="text-xs sm:text-sm text-blue-600">
+                    <p className="text-sm sm:text-sm text-blue-600">
                       {selectedClient.company}
                     </p>
                   )}
                   {selectedClient.email && (
-                    <p className="text-xs sm:text-sm text-blue-600">
+                    <p className="text-sm sm:text-sm text-blue-600">
                       {selectedClient.email}
                     </p>
                   )}
@@ -254,7 +258,7 @@ export default function QuotationInitialScreen({
 
         {/* Nota informativa */}
         <div className="mt-4 sm:mt-6 text-center">
-          <p className="text-[10px] sm:text-xs text-gray-500">
+          <p className="text-xs sm:text-xs text-gray-500">
             Los campos marcados con{" "}
             <span className="text-red-500 font-medium">*</span> son obligatorios
           </p>

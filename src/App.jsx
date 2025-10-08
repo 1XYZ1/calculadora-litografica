@@ -140,7 +140,7 @@ function AppContent() {
             <Calculator
               loadedQuotation={loadedQuotationData}
               setLoadedQuotation={setLoadedQuotationData}
-              onNavigateToClients={() => setCurrentPage("clients")}
+              onNavigateToPage={setCurrentPage}
             />
           )}
           {currentPage === "clients" && <Clients />}

@@ -22,10 +22,10 @@ const Step1Complete = ({
       {/* Información Básica del Item */}
       <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
         <div className="mb-4 sm:mb-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
             Información Básica
           </h2>
-          <p className="text-xs sm:text-sm text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Ingresa los datos principales del item
           </p>
         </div>
@@ -48,10 +48,10 @@ const Step1Complete = ({
       {/* Configuración de Impresión */}
       <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
         <div className="mb-4 sm:mb-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
             Configuración de Impresión
           </h2>
-          <p className="text-xs sm:text-sm text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Define cómo se imprimirá tu trabajo
           </p>
         </div>
@@ -90,7 +90,7 @@ const Step1Complete = ({
             </svg>
           </div>
           <div className="ml-3">
-            <p className="text-xs sm:text-sm text-blue-700">
+            <p className="text-sm sm:text-base text-blue-700">
               <strong>Tip:</strong>{" "}
               {isDigital
                 ? "En impresión digital, puedes activar la opción de dúplex sin costo adicional de plancha."
