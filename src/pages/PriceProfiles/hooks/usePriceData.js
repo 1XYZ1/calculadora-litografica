@@ -4,9 +4,11 @@ import { useFirebase } from "../../../context/FirebaseContext";
 
 /**
  * Hook para cargar todos los datos de precios desde Firestore
- * Consolida los 7 listeners en un solo hook
+ * Ahora trabaja con perfiles de precios específicos del usuario
+ *
+ * @param {string} priceProfileId - ID del perfil de precios a cargar
  */
-export function usePriceData() {
+export function usePriceData(priceProfileId) {
   const { db, appId, userId } = useFirebase();
 
   // Estados para datos de Firestore
@@ -20,43 +22,31 @@ export function usePriceData() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!db || !userId) {
+    if (!db || !userId || !priceProfileId) {
       setLoading(false);
       return;
     }
 
-    // Referencias a colecciones y documentos
-    const papersCollectionRef = collection(
-      db,
-      `artifacts/${appId}/public/data/papers`
-    );
-    const plateCollectionRef = collection(
-      db,
-      `artifacts/${appId}/public/data/plateSizes`
-    );
+    // Referencias a colecciones y documentos del perfil
+    const profileBasePath = `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}`;
+
+    const papersCollectionRef = collection(db, `${profileBasePath}/papers`);
+    const plateCollectionRef = collection(db, `${profileBasePath}/plateSizes`);
     const machineCollectionRef = collection(
       db,
-      `artifacts/${appId}/public/data/machineTypes`
+      `${profileBasePath}/machineTypes`
     );
     const finishingCollectionRef = collection(
       db,
-      `artifacts/${appId}/public/data/finishingPrices`
+      `${profileBasePath}/finishingPrices`
     );
     const settingsProfitDocRef = doc(
       db,
-      `artifacts/${appId}/public/data/settings`,
+      `${profileBasePath}/settings`,
       "profit"
     );
-    const bcvRateDocRef = doc(
-      db,
-      `artifacts/${appId}/public/data/settings`,
-      "bcvRate"
-    );
-    const ivaRateDocRef = doc(
-      db,
-      `artifacts/${appId}/public/data/settings`,
-      "ivaRate"
-    );
+    const bcvRateDocRef = doc(db, `${profileBasePath}/settings`, "bcvRate");
+    const ivaRateDocRef = doc(db, `${profileBasePath}/settings`, "ivaRate");
 
     // Listener para papers
     const unsubscribePapers = onSnapshot(
@@ -163,7 +153,7 @@ export function usePriceData() {
       unsubscribeBcvRate();
       unsubscribeIvaRate();
     };
-  }, [db, appId, userId]);
+  }, [db, appId, userId, priceProfileId]);
 
   return {
     papers,

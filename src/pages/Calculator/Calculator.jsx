@@ -6,11 +6,12 @@ import CostBreakdownModal from "../../components/CostBreakdownModal";
 import QuotationHeader from "./components/QuotationHeader";
 import ItemFormPanel from "./components/ItemFormPanel/ItemFormPanel";
 import ResultsPanel from "./components/ResultsPanel/ResultsPanel";
-import { useFirestoreData } from "./hooks/useFirestoreData";
+import { useDynamicPriceData } from "./hooks/useDynamicPriceData";
 import { useItemCalculations } from "./hooks/useItemCalculations";
 import { useItemForm } from "./hooks/useItemForm";
 import { useQuotation } from "./hooks/useQuotation";
 import { useTalonarios } from "./hooks/useTalonarios";
+import { useClients } from "../../hooks/useClients";
 import { MESSAGES } from "../../utils/constants";
 
 /**
@@ -28,16 +29,26 @@ function QuotationCalculator({
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [breakdownModalItem, setBreakdownModalItem] = useState(null);
 
-  // Hook: Cargar datos de Firestore
+  // Hook: Cargar lista de clientes
+  const { clients, loading: clientsLoading } = useClients();
+
+  // Estado temporal para clientId (se sincroniza con useQuotation)
+  const [tempClientId, setTempClientId] = useState(null);
+
+  // Hook: Cargar datos de precios dinámicos basados en el cliente seleccionado
   const {
-    paperTypes,
+    papers: paperTypes,
     plateSizes,
     machineTypes,
     finishingPrices,
-    profitPercentage,
-    bcvRate,
-    loading: firestoreLoading,
-  } = useFirestoreData({ db, appId, userId });
+    settings,
+    loading: pricesLoading,
+  } = useDynamicPriceData(tempClientId);
+
+  // Extraer valores de settings
+  const profitPercentage = settings.profit || 0;
+  const bcvRate = settings.bcv || 0;
+  const firestoreLoading = pricesLoading || clientsLoading;
 
   // Hook: Gestión de la cotización completa
   const {
@@ -45,6 +56,8 @@ function QuotationCalculator({
     setMainQuotationName,
     clientName,
     setClientName,
+    clientId,
+    setClientId: setQuotationClientId,
     items,
     grandTotals,
     editingQuotationId,
@@ -62,6 +75,22 @@ function QuotationCalculator({
     loadedQuotation,
     setLoadedQuotation,
   });
+
+  // Sincronizar tempClientId con clientId de la cotización
+  const setClientId = useCallback(
+    (id) => {
+      setTempClientId(id);
+      setQuotationClientId(id);
+    },
+    [setQuotationClientId]
+  );
+
+  // Sincronizar tempClientId cuando se carga una cotización existente
+  React.useEffect(() => {
+    if (clientId !== tempClientId) {
+      setTempClientId(clientId);
+    }
+  }, [clientId, tempClientId]);
 
   // Hook: Formulario del item actual
   const {
@@ -187,8 +216,10 @@ function QuotationCalculator({
         <QuotationHeader
           mainQuotationName={mainQuotationName}
           setMainQuotationName={setMainQuotationName}
-          clientName={clientName}
+          clientId={clientId}
+          setClientId={setClientId}
           setClientName={setClientName}
+          clients={clients}
           isEditing={!!editingQuotationId}
         />
 

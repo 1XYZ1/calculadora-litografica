@@ -26,6 +26,7 @@ export const useQuotation = ({
   const [clientName, setClientName] = useState(
     initialQuotationState.clientName
   );
+  const [clientId, setClientId] = useState(null);
   const [items, setItems] = useState(initialQuotationState.items);
   const [grandTotals, setGrandTotals] = useState(
     initialQuotationState.grandTotals
@@ -37,6 +38,7 @@ export const useQuotation = ({
     if (loadedQuotation) {
       setMainQuotationName(loadedQuotation.name || "");
       setClientName(loadedQuotation.clientName || "");
+      setClientId(loadedQuotation.clientId || null);
       setItems(loadedQuotation.items || []);
       setEditingQuotationId(loadedQuotation.id);
       setLoadedQuotation(null);
@@ -111,6 +113,7 @@ export const useQuotation = ({
   const resetQuotation = useCallback(() => {
     setMainQuotationName(initialQuotationState.mainQuotationName);
     setClientName(initialQuotationState.clientName);
+    setClientId(null);
     setItems(initialQuotationState.items);
     setGrandTotals(initialQuotationState.grandTotals);
     setEditingQuotationId(null);
@@ -124,6 +127,9 @@ export const useQuotation = ({
     if (items.length === 0) {
       return { success: false, message: MESSAGES.ERROR_NO_ITEMS };
     }
+    if (!clientId) {
+      return { success: false, message: "Debe seleccionar un cliente" };
+    }
 
     try {
       const quotationsCollectionRef = collection(
@@ -134,6 +140,7 @@ export const useQuotation = ({
       const quotationData = {
         name: mainQuotationName,
         clientName,
+        clientId,
         timestamp: Timestamp.now(),
         items,
         grandTotals,
@@ -150,7 +157,16 @@ export const useQuotation = ({
       console.error("Error saving quotation: ", e);
       return { success: false, message: "Error al guardar la cotización." };
     }
-  }, [userId, items, db, appId, mainQuotationName, clientName, grandTotals]);
+  }, [
+    userId,
+    items,
+    db,
+    appId,
+    mainQuotationName,
+    clientName,
+    clientId,
+    grandTotals,
+  ]);
 
   // Actualizar cotización existente
   const updateQuotation = useCallback(async () => {
@@ -159,6 +175,9 @@ export const useQuotation = ({
     }
     if (items.length === 0) {
       return { success: false, message: MESSAGES.ERROR_NO_ITEMS };
+    }
+    if (!clientId) {
+      return { success: false, message: "Debe seleccionar un cliente" };
     }
 
     try {
@@ -171,6 +190,7 @@ export const useQuotation = ({
       const quotationData = {
         name: mainQuotationName,
         clientName,
+        clientId,
         timestamp: Timestamp.now(),
         items,
         grandTotals,
@@ -195,6 +215,7 @@ export const useQuotation = ({
     appId,
     mainQuotationName,
     clientName,
+    clientId,
     grandTotals,
   ]);
 
@@ -203,6 +224,8 @@ export const useQuotation = ({
     setMainQuotationName,
     clientName,
     setClientName,
+    clientId,
+    setClientId,
     items,
     grandTotals,
     editingQuotationId,

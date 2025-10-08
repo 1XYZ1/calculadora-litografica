@@ -12,8 +12,12 @@ import {
  * - Porcentaje de ganancia
  * - Tasa de dólar BCV
  * - Porcentaje de IVA
+ *
+ * @param {Object} settings - Configuraciones actuales
+ * @param {Object} notification - Hook de notificaciones
+ * @param {string} priceProfileId - ID del perfil de precios actual
  */
-export function useSettingsManagement(settings, notification) {
+export function useSettingsManagement(settings, notification, priceProfileId) {
   const { db, appId, userId } = useFirebase();
 
   // Estados de inputs
@@ -21,7 +25,14 @@ export function useSettingsManagement(settings, notification) {
   const [bcvRateInput, setBcvRateInput] = useState("");
   const [ivaPercentageInput, setIvaPercentageInput] = useState("");
 
+  // Estados de loading
+  const [loadingProfit, setLoadingProfit] = useState(false);
+  const [loadingBcv, setLoadingBcv] = useState(false);
+  const [loadingIva, setLoadingIva] = useState(false);
+
   // Sincronizar inputs con valores de Firestore
+  // Solo sincronizar cuando cambia el perfil, NO cada vez que settings se actualiza
+  // Esto evita que los inputs se sobrescriban mientras el usuario está editando
   useEffect(() => {
     if (!settings) return;
 
@@ -37,12 +48,17 @@ export function useSettingsManagement(settings, notification) {
     setIvaPercentageInput(
       settings.iva !== undefined ? (settings.iva * 100).toString() : ""
     );
-  }, [settings]);
+  }, [priceProfileId]); // Solo cuando cambia el perfil
 
   // Actualizar porcentaje de ganancia
   const updateProfitPercentage = useCallback(async () => {
     if (!userId) {
       notification.showError(ADMIN_ERROR_MESSAGES.AUTH_REQUIRED_ACTION);
+      return;
+    }
+
+    if (!priceProfileId) {
+      notification.showError("Debe seleccionar un perfil de precios");
       return;
     }
 
@@ -56,10 +72,11 @@ export function useSettingsManagement(settings, notification) {
       return;
     }
 
+    setLoadingProfit(true);
     try {
       const settingsProfitDocRef = doc(
         db,
-        `artifacts/${appId}/public/data/settings`,
+        `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}/settings`,
         "profit"
       );
 
@@ -74,13 +91,20 @@ export function useSettingsManagement(settings, notification) {
     } catch (e) {
       console.error("Error updating profit percentage:", e);
       notification.showError("Error al actualizar el porcentaje de ganancia.");
+    } finally {
+      setLoadingProfit(false);
     }
-  }, [userId, profitPercentageInput, db, appId, notification]);
+  }, [userId, priceProfileId, profitPercentageInput, db, appId, notification]);
 
   // Actualizar tasa de dólar BCV
   const updateBcvRate = useCallback(async () => {
     if (!userId) {
       notification.showError(ADMIN_ERROR_MESSAGES.AUTH_REQUIRED_ACTION);
+      return;
+    }
+
+    if (!priceProfileId) {
+      notification.showError("Debe seleccionar un perfil de precios");
       return;
     }
 
@@ -91,10 +115,11 @@ export function useSettingsManagement(settings, notification) {
       return;
     }
 
+    setLoadingBcv(true);
     try {
       const bcvRateDocRef = doc(
         db,
-        `artifacts/${appId}/public/data/settings`,
+        `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}/settings`,
         "bcvRate"
       );
 
@@ -104,13 +129,20 @@ export function useSettingsManagement(settings, notification) {
     } catch (e) {
       console.error("Error updating BCV rate:", e);
       notification.showError("Error al actualizar la tasa de dólar BCV.");
+    } finally {
+      setLoadingBcv(false);
     }
-  }, [userId, bcvRateInput, db, appId, notification]);
+  }, [userId, priceProfileId, bcvRateInput, db, appId, notification]);
 
   // Actualizar porcentaje de IVA
   const updateIvaPercentage = useCallback(async () => {
     if (!userId) {
       notification.showError(ADMIN_ERROR_MESSAGES.AUTH_REQUIRED_ACTION);
+      return;
+    }
+
+    if (!priceProfileId) {
+      notification.showError("Debe seleccionar un perfil de precios");
       return;
     }
 
@@ -124,10 +156,11 @@ export function useSettingsManagement(settings, notification) {
       return;
     }
 
+    setLoadingIva(true);
     try {
       const ivaRateDocRef = doc(
         db,
-        `artifacts/${appId}/public/data/settings`,
+        `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}/settings`,
         "ivaRate"
       );
 
@@ -142,8 +175,10 @@ export function useSettingsManagement(settings, notification) {
     } catch (e) {
       console.error("Error updating IVA percentage:", e);
       notification.showError("Error al actualizar el porcentaje de IVA.");
+    } finally {
+      setLoadingIva(false);
     }
-  }, [userId, ivaPercentageInput, db, appId, notification]);
+  }, [userId, priceProfileId, ivaPercentageInput, db, appId, notification]);
 
   return {
     // Estados y funciones de porcentaje de ganancia
@@ -152,6 +187,7 @@ export function useSettingsManagement(settings, notification) {
       setProfitPercentageInput,
       profitPercentageData: settings?.profit || 0,
       updateProfitPercentage,
+      loading: loadingProfit,
     },
 
     // Estados y funciones de tasa BCV
@@ -160,6 +196,7 @@ export function useSettingsManagement(settings, notification) {
       setBcvRateInput,
       bcvRateData: settings?.bcv || 0,
       updateBcvRate,
+      loading: loadingBcv,
     },
 
     // Estados y funciones de porcentaje de IVA
@@ -168,6 +205,7 @@ export function useSettingsManagement(settings, notification) {
       setIvaPercentageInput,
       ivaPercentageData: settings?.iva || 0,
       updateIvaPercentage,
+      loading: loadingIva,
     },
   };
 }

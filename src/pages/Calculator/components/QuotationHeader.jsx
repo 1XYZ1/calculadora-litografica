@@ -1,15 +1,31 @@
 import React from "react";
 
 /**
- * Componente para el header con nombre de presupuesto y cliente
+ * Componente para el header con nombre de presupuesto y selector de cliente
  */
 const QuotationHeader = ({
   mainQuotationName,
   setMainQuotationName,
-  clientName,
+  clientId,
+  setClientId,
   setClientName,
+  clients,
   isEditing,
 }) => {
+  // Handler para cuando se selecciona un cliente
+  const handleClientChange = (e) => {
+    const selectedClientId = e.target.value;
+    setClientId(selectedClientId);
+
+    // Actualizar también el nombre del cliente para guardarlo en la cotización
+    if (selectedClientId) {
+      const selectedClient = clients.find((c) => c.id === selectedClientId);
+      setClientName(selectedClient?.name || "");
+    } else {
+      setClientName("");
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 max-w-2xl mx-auto">
       <div>
@@ -31,18 +47,35 @@ const QuotationHeader = ({
       <div>
         <label
           className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="clientName"
+          htmlFor="clientSelect"
         >
-          Nombre del Cliente
+          Cliente <span className="text-red-500">*</span>
         </label>
-        <input
-          id="clientName"
-          type="text"
-          value={clientName}
-          onChange={(e) => setClientName(e.target.value)}
-          className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700"
-          placeholder="Ej. DIALCA"
-        />
+        <select
+          id="clientSelect"
+          value={clientId || ""}
+          onChange={handleClientChange}
+          className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          disabled={clients.length === 0}
+        >
+          {clients.length === 0 ? (
+            <option value="">No hay clientes creados</option>
+          ) : (
+            <>
+              <option value="">Seleccionar cliente...</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
+              ))}
+            </>
+          )}
+        </select>
+        {clients.length === 0 && (
+          <p className="text-amber-600 text-sm mt-1">
+            Crea un cliente primero en la sección Clientes
+          </p>
+        )}
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import { useQuotationsGrouping } from "./hooks/useQuotationsGrouping";
 import { useQuotationsSelection } from "./hooks/useQuotationsSelection";
 import { useQuotationsDeletion } from "./hooks/useQuotationsDeletion";
 import { useNotification } from "./hooks/useNotification";
+import { useClients } from "../../hooks/useClients";
 
 // Componentes
 import SavedQuotationsHeader from "./components/SavedQuotationsHeader";
@@ -34,7 +35,10 @@ export default function SavedQuotations({ onLoadQuotation }) {
     userId,
   });
 
-  // Hook: Gestión de filtros (fecha + búsqueda)
+  // Hook: Cargar lista de clientes
+  const { clients } = useClients();
+
+  // Hook: Gestión de filtros (fecha + búsqueda + cliente)
   const {
     startDate,
     setStartDate,
@@ -42,6 +46,8 @@ export default function SavedQuotations({ onLoadQuotation }) {
     setEndDate,
     searchQuery,
     setSearchQuery,
+    selectedClientId,
+    setSelectedClientId,
     filteredQuotations,
     hasActiveFilters,
     clearAllFilters,
@@ -116,11 +122,14 @@ export default function SavedQuotations({ onLoadQuotation }) {
       <div className="max-w-6xl mx-auto bg-white p-8 rounded-2xl shadow-xl">
         <SavedQuotationsHeader totalCount={filteredQuotations.length} />
 
-        {/* Búsqueda */}
+        {/* Búsqueda y filtros */}
         <SearchBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onClear={handleClearSearch}
+          selectedClientId={selectedClientId}
+          onClientFilterChange={setSelectedClientId}
+          clients={clients}
         />
 
         {/* Filtros de fecha */}

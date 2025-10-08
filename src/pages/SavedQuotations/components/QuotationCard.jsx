@@ -11,7 +11,7 @@ const QuotationCard = ({
   onEdit,
   onDelete,
 }) => {
-  const { id, name, timestamp, grandTotals } = quotation;
+  const { id, name, clientName, timestamp, grandTotals } = quotation;
 
   return (
     <li className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
@@ -30,6 +30,29 @@ const QuotationCard = ({
             <p className="text-lg font-bold text-gray-900 break-words">
               {name}
             </p>
+
+            {/* Cliente */}
+            {clientName && (
+              <div className="flex items-center gap-2 mt-1">
+                <svg
+                  className="w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                <span className="text-indigo-600 text-sm font-medium">
+                  {clientName}
+                </span>
+              </div>
+            )}
+
             <p className="text-gray-500 text-sm mt-1">
               {formatQuotationDate(timestamp)}
             </p>

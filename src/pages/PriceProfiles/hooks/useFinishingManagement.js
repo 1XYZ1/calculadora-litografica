@@ -10,8 +10,16 @@ import {
 /**
  * Hook para gestionar precios de acabados (UV, laminados, remate, etc.)
  * y precios de impresión digital
+ *
+ * @param {Object} finishingPrices - Precios de acabados actuales
+ * @param {Object} notification - Hook de notificaciones
+ * @param {string} priceProfileId - ID del perfil de precios actual
  */
-export function useFinishingManagement(finishingPrices, notification) {
+export function useFinishingManagement(
+  finishingPrices,
+  notification,
+  priceProfileId
+) {
   const { db, appId, userId } = useFirebase();
 
   // Estados de inputs para precios de UV por tamaño
@@ -37,7 +45,12 @@ export function useFinishingManagement(finishingPrices, notification) {
   const [digitalQuarterTiroRetiroInput, setDigitalQuarterTiroRetiroInput] =
     useState("");
 
+  // Estados de loading granulares por tipo de operación
+  const [loadingItemId, setLoadingItemId] = useState(null);
+
   // Sincronizar inputs con precios de Firestore
+  // Solo sincronizar cuando cambia el perfil, NO cada vez que finishingPrices se actualiza
+  // Esto evita que los inputs se reinicien mientras el usuario está editando
   useEffect(() => {
     if (!finishingPrices) return;
 
@@ -90,7 +103,7 @@ export function useFinishingManagement(finishingPrices, notification) {
         ? finishingPrices["digital_quarter_tiro_retiro"].toString()
         : ""
     );
-  }, [finishingPrices]);
+  }, [priceProfileId]); // Solo cuando cambia el perfil
 
   // Handler para cambiar precios de UV
   const handleUvPriceChange = useCallback((size, value) => {
@@ -105,6 +118,11 @@ export function useFinishingManagement(finishingPrices, notification) {
         return;
       }
 
+      if (!priceProfileId) {
+        notification.showError("Debe seleccionar un perfil de precios");
+        return;
+      }
+
       // Validar precio
       const validation = validatePrice(priceInput, formatIdForMessage(id));
       if (!validation.isValid) {
@@ -112,10 +130,11 @@ export function useFinishingManagement(finishingPrices, notification) {
         return;
       }
 
+      setLoadingItemId(id);
       try {
         const docRef = doc(
           db,
-          `artifacts/${appId}/public/data/finishingPrices`,
+          `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}/finishingPrices`,
           id
         );
         await setDoc(docRef, { price: validation.value }, { merge: true });
@@ -127,10 +146,131 @@ export function useFinishingManagement(finishingPrices, notification) {
         notification.showError(
           `Error al actualizar el precio de ${formatIdForMessage(id)}.`
         );
+      } finally {
+        setLoadingItemId(null);
       }
     },
-    [userId, db, appId, notification]
+    [userId, db, appId, notification, priceProfileId]
   );
+
+  // Función para actualizar TODOS los precios de UV de una vez
+  const updateAllUvPrices = useCallback(async () => {
+    if (!userId) {
+      notification.showError(ADMIN_ERROR_MESSAGES.AUTH_REQUIRED_ACTION);
+      return;
+    }
+
+    if (!priceProfileId) {
+      notification.showError("Debe seleccionar un perfil de precios");
+      return;
+    }
+
+    // Validar todos los precios de UV antes de actualizar
+    const uvEntries = Object.entries(uvPricesInput);
+    const validatedPrices = {};
+
+    for (const [key, value] of uvEntries) {
+      const validation = validatePrice(value, formatIdForMessage(`uv_${key}`));
+      if (!validation.isValid) {
+        notification.showError(validation.error);
+        return;
+      }
+      validatedPrices[key] = validation.value;
+    }
+
+    setLoadingItemId("uv_all");
+    try {
+      // Actualizar todos los precios de UV en paralelo
+      const updatePromises = Object.entries(validatedPrices).map(
+        ([key, value]) => {
+          const docRef = doc(
+            db,
+            `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}/finishingPrices`,
+            `uv_${key}`
+          );
+          return setDoc(docRef, { price: value }, { merge: true });
+        }
+      );
+
+      await Promise.all(updatePromises);
+      notification.showSuccess(
+        "Todos los precios de UV actualizados correctamente"
+      );
+    } catch (e) {
+      console.error("Error updating UV prices:", e);
+      notification.showError("Error al actualizar los precios de UV");
+    } finally {
+      setLoadingItemId(null);
+    }
+  }, [userId, db, appId, notification, priceProfileId, uvPricesInput]);
+
+  // Función para actualizar TODOS los otros acabados de una vez
+  const updateAllOtherFinishings = useCallback(async () => {
+    if (!userId) {
+      notification.showError(ADMIN_ERROR_MESSAGES.AUTH_REQUIRED_ACTION);
+      return;
+    }
+
+    if (!priceProfileId) {
+      notification.showError("Debe seleccionar un perfil de precios");
+      return;
+    }
+
+    // Preparar todos los acabados a actualizar
+    const finishingsToUpdate = {
+      remate: rematePriceInput,
+      laminado_mate: laminadoMatePriceInput,
+      laminado_brillante: laminadoBrillantePriceInput,
+      signado: signadoPriceInput,
+      troquelado: troqueladoPriceInput,
+    };
+
+    // Validar todos los precios antes de actualizar
+    const validatedPrices = {};
+
+    for (const [id, value] of Object.entries(finishingsToUpdate)) {
+      const validation = validatePrice(value, formatIdForMessage(id));
+      if (!validation.isValid) {
+        notification.showError(validation.error);
+        return;
+      }
+      validatedPrices[id] = validation.value;
+    }
+
+    setLoadingItemId("other_all");
+    try {
+      // Actualizar todos los acabados en paralelo
+      const updatePromises = Object.entries(validatedPrices).map(
+        ([id, value]) => {
+          const docRef = doc(
+            db,
+            `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}/finishingPrices`,
+            id
+          );
+          return setDoc(docRef, { price: value }, { merge: true });
+        }
+      );
+
+      await Promise.all(updatePromises);
+      notification.showSuccess("Todos los acabados actualizados correctamente");
+    } catch (e) {
+      console.error("Error updating finishing prices:", e);
+      notification.showError("Error al actualizar los precios de acabados");
+    } finally {
+      setLoadingItemId(null);
+    }
+  }, [
+    userId,
+    db,
+    appId,
+    notification,
+    priceProfileId,
+    rematePriceInput,
+    laminadoMatePriceInput,
+    laminadoBrillantePriceInput,
+    signadoPriceInput,
+    troqueladoPriceInput,
+  ]);
 
   return {
     // Inputs de UV
@@ -155,7 +295,12 @@ export function useFinishingManagement(finishingPrices, notification) {
     digitalQuarterTiroRetiroInput,
     setDigitalQuarterTiroRetiroInput,
 
-    // Función de actualización
+    // Funciones de actualización
     updateFinishingPrice,
+    updateAllUvPrices,
+    updateAllOtherFinishings,
+
+    // Estado de loading granular por item
+    loadingItemId,
   };
 }

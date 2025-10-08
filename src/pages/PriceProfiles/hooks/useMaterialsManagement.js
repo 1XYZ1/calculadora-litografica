@@ -9,8 +9,11 @@ import {
 /**
  * Hook para gestionar operaciones CRUD de tamaños de plancha y tipos de máquina
  * Maneja estados de formulario y operaciones con Firestore
+ *
+ * @param {Object} notification - Hook de notificaciones
+ * @param {string} priceProfileId - ID del perfil de precios actual
  */
-export function useMaterialsManagement(notification) {
+export function useMaterialsManagement(notification, priceProfileId) {
   const { db, appId, userId } = useFirebase();
 
   // Estados de formulario para planchas
@@ -24,12 +27,20 @@ export function useMaterialsManagement(notification) {
 
   // Referencias a colecciones
   const getPlateCollectionRef = useCallback(() => {
-    return collection(db, `artifacts/${appId}/public/data/plateSizes`);
-  }, [db, appId]);
+    if (!priceProfileId) return null;
+    return collection(
+      db,
+      `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}/plateSizes`
+    );
+  }, [db, appId, userId, priceProfileId]);
 
   const getMachineCollectionRef = useCallback(() => {
-    return collection(db, `artifacts/${appId}/public/data/machineTypes`);
-  }, [db, appId]);
+    if (!priceProfileId) return null;
+    return collection(
+      db,
+      `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}/machineTypes`
+    );
+  }, [db, appId, userId, priceProfileId]);
 
   // ========== OPERACIONES DE PLANCHAS ==========
 
@@ -37,6 +48,11 @@ export function useMaterialsManagement(notification) {
   const addPlateSize = useCallback(async () => {
     if (!userId) {
       notification.showError(ADMIN_ERROR_MESSAGES.AUTH_REQUIRED_ACTION);
+      return;
+    }
+
+    if (!priceProfileId) {
+      notification.showError("Debe seleccionar un perfil de precios");
       return;
     }
 
@@ -51,8 +67,11 @@ export function useMaterialsManagement(notification) {
       return;
     }
 
+    const collectionRef = getPlateCollectionRef();
+    if (!collectionRef) return;
+
     try {
-      await addDoc(getPlateCollectionRef(), {
+      await addDoc(collectionRef, {
         size: newPlateSizeName,
         price: price,
       });
@@ -68,6 +87,7 @@ export function useMaterialsManagement(notification) {
     }
   }, [
     userId,
+    priceProfileId,
     newPlateSizeName,
     newPlateSizePrice,
     getPlateCollectionRef,
@@ -82,9 +102,18 @@ export function useMaterialsManagement(notification) {
         return;
       }
 
+      if (!priceProfileId) {
+        notification.showError("Debe seleccionar un perfil de precios");
+        return;
+      }
+
       try {
         await deleteDoc(
-          doc(db, `artifacts/${appId}/public/data/plateSizes`, id)
+          doc(
+            db,
+            `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}/plateSizes`,
+            id
+          )
         );
         notification.showSuccess(ADMIN_SUCCESS_MESSAGES.PLATE_DELETED);
       } catch (e) {
@@ -92,7 +121,7 @@ export function useMaterialsManagement(notification) {
         notification.showError("Error al eliminar el tipo de plancha.");
       }
     },
-    [userId, db, appId, notification]
+    [userId, db, appId, notification, priceProfileId]
   );
 
   // ========== OPERACIONES DE MÁQUINAS ==========
@@ -101,6 +130,11 @@ export function useMaterialsManagement(notification) {
   const addMachineType = useCallback(async () => {
     if (!userId) {
       notification.showError(ADMIN_ERROR_MESSAGES.AUTH_REQUIRED_ACTION);
+      return;
+    }
+
+    if (!priceProfileId) {
+      notification.showError("Debe seleccionar un perfil de precios");
       return;
     }
 
@@ -115,8 +149,11 @@ export function useMaterialsManagement(notification) {
       return;
     }
 
+    const collectionRef = getMachineCollectionRef();
+    if (!collectionRef) return;
+
     try {
-      await addDoc(getMachineCollectionRef(), {
+      await addDoc(collectionRef, {
         name: newMachineTypeName,
         millarPrice: price,
       });
@@ -132,6 +169,7 @@ export function useMaterialsManagement(notification) {
     }
   }, [
     userId,
+    priceProfileId,
     newMachineTypeName,
     newMachineTypeMillarPrice,
     getMachineCollectionRef,
@@ -146,9 +184,18 @@ export function useMaterialsManagement(notification) {
         return;
       }
 
+      if (!priceProfileId) {
+        notification.showError("Debe seleccionar un perfil de precios");
+        return;
+      }
+
       try {
         await deleteDoc(
-          doc(db, `artifacts/${appId}/public/data/machineTypes`, id)
+          doc(
+            db,
+            `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}/machineTypes`,
+            id
+          )
         );
         notification.showSuccess(ADMIN_SUCCESS_MESSAGES.MACHINE_DELETED);
       } catch (e) {
@@ -156,7 +203,7 @@ export function useMaterialsManagement(notification) {
         notification.showError("Error al eliminar el tipo de máquina.");
       }
     },
-    [userId, db, appId, notification]
+    [userId, db, appId, notification, priceProfileId]
   );
 
   return {

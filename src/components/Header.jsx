@@ -50,14 +50,24 @@ export default function Header({ currentPage, setCurrentPage, onShowAuth }) {
                 Calculadora
               </button>
               <button
-                onClick={() => setCurrentPage("admin")}
+                onClick={() => setCurrentPage("clients")}
                 className={`px-5 py-2.5 rounded-lg transition-all duration-200 font-medium ${
-                  currentPage === "admin"
+                  currentPage === "clients"
                     ? "bg-white text-blue-700 shadow-md"
                     : "bg-blue-500/80 text-white hover:bg-blue-500"
                 }`}
               >
-                Precios
+                Clientes
+              </button>
+              <button
+                onClick={() => setCurrentPage("priceProfiles")}
+                className={`px-5 py-2.5 rounded-lg transition-all duration-200 font-medium ${
+                  currentPage === "priceProfiles"
+                    ? "bg-white text-blue-700 shadow-md"
+                    : "bg-blue-500/80 text-white hover:bg-blue-500"
+                }`}
+              >
+                Configuración
               </button>
               <button
                 onClick={() => setCurrentPage("savedQuotations")}

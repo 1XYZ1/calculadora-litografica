@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { FirebaseProvider, useFirebase } from "./context/FirebaseContext";
 import Header from "./components/Header";
 import Calculator from "./pages/Calculator/Calculator";
-import PriceAdmin from "./pages/PriceAdmin/PriceAdmin";
+import Clients from "./pages/Clients/Clients";
+import PriceProfiles from "./pages/PriceProfiles/PriceProfiles";
 import SavedQuotations from "./pages/SavedQuotations/SavedQuotations";
 import AuthModal from "./components/AuthModal";
 
@@ -141,7 +142,8 @@ function AppContent() {
               setLoadedQuotation={setLoadedQuotationData}
             />
           )}
-          {currentPage === "admin" && <PriceAdmin />}
+          {currentPage === "clients" && <Clients />}
+          {currentPage === "priceProfiles" && <PriceProfiles />}
           {currentPage === "savedQuotations" && (
             <SavedQuotations onLoadQuotation={handleLoadQuotation} />
           )}
