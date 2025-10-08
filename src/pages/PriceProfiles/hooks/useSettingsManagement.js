@@ -30,24 +30,12 @@ export function useSettingsManagement(settings, notification, priceProfileId) {
   const [loadingBcv, setLoadingBcv] = useState(false);
   const [loadingIva, setLoadingIva] = useState(false);
 
-  // Sincronizar inputs con valores de Firestore
-  // Solo sincronizar cuando cambia el perfil, NO cada vez que settings se actualiza
-  // Esto evita que los inputs se sobrescriban mientras el usuario está editando
+  // Limpiar inputs cuando cambia el perfil
+  // Los inputs siempre inician vacíos, mostrando solo el valor actual en el badge
   useEffect(() => {
-    if (!settings) return;
-
-    // Convertir porcentaje de ganancia a % (de decimal a porcentaje)
-    setProfitPercentageInput(
-      settings.profit !== undefined ? (settings.profit * 100).toString() : ""
-    );
-
-    // Tasa BCV con 2 decimales
-    setBcvRateInput(settings.bcv !== undefined ? settings.bcv.toFixed(2) : "");
-
-    // Convertir porcentaje de IVA a % (de decimal a porcentaje)
-    setIvaPercentageInput(
-      settings.iva !== undefined ? (settings.iva * 100).toString() : ""
-    );
+    setProfitPercentageInput("");
+    setBcvRateInput("");
+    setIvaPercentageInput("");
   }, [priceProfileId]); // Solo cuando cambia el perfil
 
   // Actualizar porcentaje de ganancia

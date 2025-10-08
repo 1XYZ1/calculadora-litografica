@@ -154,7 +154,7 @@ function PriceProfiles() {
   )?.name;
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-0 sm:p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
       {/* Toast de notificaciones */}
       <Toast
         message={notification.message}
@@ -182,7 +182,7 @@ function PriceProfiles() {
         onCancel={() => setDeleteModalOpen(false)}
       />
 
-      <div className="max-w-7xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-xl space-y-10">
+      <div className="max-w-7xl mx-auto bg-white p-4 sm:p-6 lg:p-8 rounded-none sm:rounded-2xl shadow-xl space-y-10">
         {/* Header */}
         <PriceProfileHeader />
 

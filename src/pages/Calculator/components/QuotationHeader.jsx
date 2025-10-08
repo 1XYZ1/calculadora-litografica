@@ -27,10 +27,10 @@ const QuotationHeader = ({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 max-w-2xl mx-auto">
+    <div className="grid-responsive-2 gap-3 sm:gap-4 mb-6 sm:mb-8 max-w-2xl mx-auto">
       <div>
         <label
-          className="block text-gray-700 text-sm font-bold mb-2"
+          className="block text-gray-700 label-responsive mb-1.5 sm:mb-2"
           htmlFor="mainQuotationName"
         >
           Nombre del Presupuesto
@@ -40,13 +40,13 @@ const QuotationHeader = ({
           type="text"
           value={mainQuotationName}
           onChange={(e) => setMainQuotationName(e.target.value)}
-          className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700"
+          className="shadow appearance-none border rounded-lg w-full min-h-[44px] px-3 sm:px-4 text-responsive-sm text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           placeholder="Ej. Papelería Corporativa"
         />
       </div>
       <div>
         <label
-          className="block text-gray-700 text-sm font-bold mb-2"
+          className="block text-gray-700 label-responsive mb-1.5 sm:mb-2"
           htmlFor="clientSelect"
         >
           Cliente <span className="text-red-500">*</span>
@@ -55,7 +55,7 @@ const QuotationHeader = ({
           id="clientSelect"
           value={clientId || ""}
           onChange={handleClientChange}
-          className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          className="shadow appearance-none border rounded-lg w-full min-h-[44px] px-3 sm:px-4 text-responsive-sm text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           disabled={clients.length === 0}
         >
           {clients.length === 0 ? (
@@ -72,7 +72,7 @@ const QuotationHeader = ({
           )}
         </select>
         {clients.length === 0 && (
-          <p className="text-amber-600 text-sm mt-1">
+          <p className="text-amber-600 text-xs sm:text-sm mt-1">
             Crea un cliente primero en la sección Clientes
           </p>
         )}

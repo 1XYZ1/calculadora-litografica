@@ -120,27 +120,31 @@ function FinishingSection({
   };
 
   return (
-    <section className={`${colors.bg} p-6 rounded-xl shadow-md`}>
+    <section className={`${colors.bg} p-4 sm:p-6 rounded-xl shadow-md`}>
       <h3
-        className={`text-2xl font-bold ${colors.title} mb-6 flex items-center gap-2`}
+        className={`text-xl sm:text-2xl font-bold ${colors.title} mb-4 sm:mb-6 flex items-center gap-2`}
       >
-        <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
+        <svg
+          className="w-6 h-6 sm:w-7 sm:h-7"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
           <path
             fillRule="evenodd"
             d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
             clipRule="evenodd"
           />
         </svg>
-        Precios de Acabados
+        <span className="text-xl sm:text-2xl">Precios de Acabados</span>
       </h3>
 
       {/* Subsección de precios de UV */}
-      <div className="bg-white p-6 rounded-xl shadow-md mb-6 border-2 border-gray-200">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md mb-4 sm:mb-6 border-2 border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-5">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
               <svg
-                className="w-6 h-6 text-yellow-600"
+                className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -148,10 +152,12 @@ function FinishingSection({
               </svg>
             </div>
             <div>
-              <h4 className="text-xl font-bold text-gray-800">
+              <h4 className="text-lg sm:text-xl font-bold text-gray-800">
                 Precios de UV por Tamaño
               </h4>
-              <p className="text-sm text-gray-500">Precio por unidad</p>
+              <p className="text-xs sm:text-sm text-gray-500">
+                Precio por unidad
+              </p>
             </div>
           </div>
 
@@ -161,7 +167,7 @@ function FinishingSection({
             disabled={loadingItemId === "uv_all" || !uvHasChanges}
             className={`${
               colors.button
-            } text-white font-bold py-2 md:py-3 px-3 md:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 relative text-sm md:text-base ${
+            } min-h-[44px] text-white font-bold py-2 sm:py-3 px-3 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative text-sm sm:text-base ${
               uvHasChanges ? "ring-2 ring-amber-400 ring-offset-2" : ""
             }`}
           >
@@ -214,7 +220,7 @@ function FinishingSection({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {UV_SIZE_KEYS.map((size) => (
             <PriceField
               key={size.key}
@@ -231,12 +237,12 @@ function FinishingSection({
       </div>
 
       {/* Otros acabados */}
-      <div className="bg-white p-6 rounded-xl shadow-md border-2 border-gray-200">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md border-2 border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-5">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
               <svg
-                className="w-6 h-6 text-purple-600"
+                className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -248,10 +254,10 @@ function FinishingSection({
               </svg>
             </div>
             <div>
-              <h4 className="text-xl font-bold text-gray-800">
+              <h4 className="text-lg sm:text-xl font-bold text-gray-800">
                 Otros Acabados
               </h4>
-              <p className="text-sm text-gray-500">
+              <p className="text-xs sm:text-sm text-gray-500">
                 Laminados, remate, signado y troquelado
               </p>
             </div>
@@ -265,7 +271,7 @@ function FinishingSection({
             }
             className={`${
               colors.button
-            } text-white font-bold py-2 md:py-3 px-3 md:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 relative text-sm md:text-base ${
+            } min-h-[44px] text-white font-bold py-2 sm:py-3 px-3 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative text-sm sm:text-base ${
               otherFinishingsHaveChanges
                 ? "ring-2 ring-amber-400 ring-offset-2"
                 : ""
@@ -320,7 +326,7 @@ function FinishingSection({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <PriceField
             label="Remate"
             value={rematePriceInput}

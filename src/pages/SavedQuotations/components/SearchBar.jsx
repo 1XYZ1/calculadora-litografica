@@ -13,7 +13,7 @@ const SearchBar = ({
   clients,
 }) => {
   return (
-    <div className="mb-6 space-y-4">
+    <div className="mb-4 sm:mb-6 space-y-3 sm:space-y-4">
       {/* Búsqueda por texto */}
       <div>
         <label
@@ -26,7 +26,7 @@ const SearchBar = ({
           {/* Icono de búsqueda */}
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <svg
-              className="w-5 h-5 text-gray-400"
+              className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -46,18 +46,18 @@ const SearchBar = ({
             id="search"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Buscar por nombre de cotización o cliente..."
-            className="w-full pl-10 pr-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Buscar cotización o cliente..."
+            className="w-full pl-8 sm:pl-10 pr-8 sm:pr-10 p-2 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
           />
 
           {/* Botón para limpiar búsqueda */}
           {searchQuery && (
             <button
               onClick={onClear}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute inset-y-0 right-0 flex items-center pr-2 sm:pr-3 text-gray-400 hover:text-gray-600 transition-colors"
             >
               <svg
-                className="w-5 h-5"
+                className="w-4 h-4 sm:w-5 sm:h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -86,7 +86,7 @@ const SearchBar = ({
           id="clientFilter"
           value={selectedClientId || ""}
           onChange={(e) => onClientFilterChange(e.target.value)}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full p-2 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
         >
           <option value="">Todos los clientes</option>
           {clients.map((client) => (

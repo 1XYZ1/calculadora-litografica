@@ -11,6 +11,7 @@ const QuotationSummary = ({
   onUpdate,
   onCancel,
   onPreview,
+  isSaving = false,
 }) => {
   return (
     <div className="space-y-6 bg-gray-100 p-6 rounded-xl shadow-inner">
@@ -42,13 +43,48 @@ const QuotationSummary = ({
           <>
             <button
               onClick={onUpdate}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors"
+              disabled={isSaving}
+              className={`flex-1 font-bold py-3 rounded-lg shadow-md transition-all flex items-center justify-center space-x-2 ${
+                isSaving
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-green-600 hover:bg-green-700 hover:scale-105"
+              } text-white`}
             >
-              Actualizar Presupuesto
+              {isSaving ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  <span>Actualizando...</span>
+                </>
+              ) : (
+                <span>Actualizar Presupuesto</span>
+              )}
             </button>
             <button
               onClick={onCancel}
-              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors"
+              disabled={isSaving}
+              className={`flex-1 font-bold py-3 rounded-lg shadow-md transition-all ${
+                isSaving
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-red-600 hover:bg-red-700 hover:scale-105"
+              } text-white`}
             >
               Cancelar Edición
             </button>
@@ -56,14 +92,49 @@ const QuotationSummary = ({
         ) : (
           <button
             onClick={onSave}
-            className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors"
+            disabled={isSaving}
+            className={`flex-1 font-bold py-3 rounded-lg shadow-md transition-all flex items-center justify-center space-x-2 ${
+              isSaving
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700 hover:scale-105"
+            } text-white`}
           >
-            Guardar Presupuesto
+            {isSaving ? (
+              <>
+                <svg
+                  className="animate-spin h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <span>Guardando...</span>
+              </>
+            ) : (
+              <span>Guardar Presupuesto</span>
+            )}
           </button>
         )}
         <button
           onClick={onPreview}
-          className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors"
+          disabled={isSaving}
+          className={`flex-1 font-bold py-3 rounded-lg shadow-md transition-all ${
+            isSaving
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-gray-600 hover:bg-gray-700 hover:scale-105"
+          } text-white`}
         >
           Vista Previa
         </button>

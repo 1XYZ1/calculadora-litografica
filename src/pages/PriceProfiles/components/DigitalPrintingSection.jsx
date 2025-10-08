@@ -87,11 +87,15 @@ function DigitalPrintingSection({
   };
 
   return (
-    <section className={`${colors.bg} p-6 rounded-xl shadow-md`}>
+    <section className={`${colors.bg} p-4 sm:p-6 rounded-xl shadow-md`}>
       <h3
-        className={`text-2xl font-bold ${colors.title} mb-6 flex items-center gap-2`}
+        className={`text-xl sm:text-2xl font-bold ${colors.title} mb-4 sm:mb-6 flex items-center gap-2`}
       >
-        <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
+        <svg
+          className="w-6 h-6 sm:w-7 sm:h-7"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
           <path
             fillRule="evenodd"
             d="M4 4a1 1 0 011-1h10a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4zm2 1v10h8V5H6z"
@@ -99,15 +103,17 @@ function DigitalPrintingSection({
           />
           <path d="M7 7h6v1H7V7zm0 2h6v1H7V9zm0 2h6v1H7v-1z" />
         </svg>
-        Precios de Impresión Digital
+        <span className="text-xl sm:text-2xl">
+          Precios de Impresión Digital
+        </span>
       </h3>
 
-      <div className="bg-white p-6 rounded-xl shadow-md border-2 border-gray-200">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md border-2 border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-5">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
               <svg
-                className="w-6 h-6 text-cyan-600"
+                className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-600"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -119,10 +125,12 @@ function DigitalPrintingSection({
               </svg>
             </div>
             <div>
-              <h4 className="text-xl font-bold text-gray-800">
+              <h4 className="text-lg sm:text-xl font-bold text-gray-800">
                 Cuarto Pliego Digital
               </h4>
-              <p className="text-sm text-gray-500">Precio por unidad impresa</p>
+              <p className="text-xs sm:text-sm text-gray-500">
+                Precio por unidad impresa
+              </p>
             </div>
           </div>
 
@@ -132,7 +140,7 @@ function DigitalPrintingSection({
             disabled={loadingItemId === "digital_all" || !hasChanges}
             className={`${
               colors.button
-            } text-white font-bold py-2 md:py-3 px-3 md:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 relative text-sm md:text-base ${
+            } min-h-[44px] text-white font-bold py-2 sm:py-3 px-3 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative text-sm sm:text-base ${
               hasChanges ? "ring-2 ring-amber-400 ring-offset-2" : ""
             }`}
           >
@@ -185,7 +193,7 @@ function DigitalPrintingSection({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <PriceField
             label="1/4 Pliego Digital (Tiro)"
             value={digitalQuarterTiroInput}

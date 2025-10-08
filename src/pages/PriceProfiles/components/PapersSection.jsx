@@ -99,22 +99,26 @@ function PapersSection({
   };
 
   return (
-    <section className={`${colors.bg} p-6 rounded-xl shadow-md`}>
+    <section className={`${colors.bg} p-4 sm:p-6 rounded-xl shadow-md`}>
       <h3
-        className={`text-2xl font-bold ${colors.title} mb-6 flex items-center gap-2`}
+        className={`text-xl sm:text-2xl font-bold ${colors.title} mb-4 sm:mb-6 flex items-center gap-2`}
       >
-        <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
+        <svg
+          className="w-6 h-6 sm:w-7 sm:h-7"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
           <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z" />
           <path d="M3 8a2 2 0 012-2v10h8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
         </svg>
-        Precios de Papel
+        <span className="text-xl sm:text-2xl">Precios de Papel</span>
       </h3>
 
       {/* Formulario para añadir nuevo papel */}
-      <div className="bg-white p-6 rounded-xl shadow-md mb-6 border-2 border-gray-200">
-        <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md mb-4 sm:mb-6 border-2 border-gray-200">
+        <h4 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
           <svg
-            className="w-5 h-5 text-green-600"
+            className="w-4 h-4 sm:w-5 sm:h-5 text-green-600"
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -124,15 +128,17 @@ function PapersSection({
               clipRule="evenodd"
             />
           </svg>
-          Añadir Nuevo Tipo de Papel
+          <span className="text-base sm:text-lg">
+            Añadir Nuevo Tipo de Papel
+          </span>
         </h4>
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr,1.5fr,auto] gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr,1.5fr,auto] gap-3 sm:gap-4">
           <input
             type="text"
             placeholder="Nombre del Papel (ej. GLASE 115GR)"
             value={newPaperName}
             onChange={(e) => setNewPaperName(e.target.value)}
-            className="p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="p-2.5 sm:p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
           />
           <input
             type="number"
@@ -140,11 +146,11 @@ function PapersSection({
             placeholder="Precio (ej. 2.50)"
             value={newPaperPrice}
             onChange={(e) => setNewPaperPrice(e.target.value)}
-            className="p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="p-2.5 sm:p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
           />
           <button
             onClick={addPaper}
-            className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 shadow-md hover:shadow-lg whitespace-nowrap"
+            className="min-h-[44px] bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg transition duration-300 shadow-md hover:shadow-lg whitespace-nowrap text-sm sm:text-base"
           >
             Añadir Papel
           </button>
@@ -152,12 +158,12 @@ function PapersSection({
       </div>
 
       {/* Lista de papeles existentes */}
-      <div className="bg-white p-6 rounded-xl shadow-md border-2 border-gray-200">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md border-2 border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-5">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
               <svg
-                className="w-6 h-6 text-blue-600"
+                className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -169,10 +175,10 @@ function PapersSection({
               </svg>
             </div>
             <div>
-              <h4 className="text-xl font-bold text-gray-800">
+              <h4 className="text-lg sm:text-xl font-bold text-gray-800">
                 Papeles Existentes
               </h4>
-              <p className="text-sm text-gray-500">
+              <p className="text-xs sm:text-sm text-gray-500">
                 {papers.length} tipos configurados
               </p>
             </div>
@@ -184,7 +190,7 @@ function PapersSection({
             disabled={loadingAll || !hasChanges}
             className={`${
               colors.button
-            } text-white font-bold py-2 md:py-3 px-3 md:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 relative text-sm md:text-base ${
+            } min-h-[44px] text-white font-bold py-2 sm:py-3 px-3 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative text-sm sm:text-base ${
               hasChanges ? "ring-2 ring-amber-400 ring-offset-2" : ""
             }`}
           >
@@ -237,7 +243,7 @@ function PapersSection({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {papers.map((paper) => (
             <PriceField key={paper.id} paper={paper} />
           ))}

@@ -111,7 +111,7 @@ function Clients() {
   );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-0 sm:p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
       {/* Modal de mensajes */}
       <ModalMessage message={notification} onClose={closeNotification} />
 
@@ -136,13 +136,13 @@ function Clients() {
         onCancel={() => setDeleteModalOpen(false)}
       />
 
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto bg-white p-4 sm:p-6 lg:p-8 rounded-none sm:rounded-2xl shadow-xl">
         {/* Header con botón de crear */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 gap-4">
           <ClientsHeader />
           <button
             onClick={handleCreateClient}
-            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition-colors duration-200 flex items-center gap-2 mt-4 md:mt-0"
+            className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold rounded-lg shadow-md transition-colors duration-200 flex items-center justify-center gap-2 min-h-[44px]"
             disabled={profilesLoading}
           >
             <svg
@@ -158,16 +158,16 @@ function Clients() {
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            Nuevo Cliente
+            <span className="text-sm sm:text-base">Nuevo Cliente</span>
           </button>
         </div>
 
         {/* Mensaje de advertencia si no hay perfiles */}
         {!profilesLoading && profiles.length === 0 && (
-          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-6 py-4 rounded-lg mb-6">
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 sm:px-6 py-4 rounded-lg mb-6">
             <div className="flex items-start gap-3">
               <svg
-                className="w-6 h-6 flex-shrink-0 mt-0.5"
+                className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 mt-0.5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -180,10 +180,10 @@ function Clients() {
                 />
               </svg>
               <div>
-                <p className="font-semibold mb-1">
+                <p className="font-semibold mb-1 text-sm sm:text-base">
                   No hay perfiles de precios creados
                 </p>
-                <p className="text-sm">
+                <p className="text-xs sm:text-sm">
                   Antes de crear clientes, necesitas crear al menos un perfil de
                   precios en la sección de Configuración.
                 </p>
@@ -194,15 +194,15 @@ function Clients() {
 
         {/* Error de carga */}
         {clientsError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg mb-6">
-            {clientsError}
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 sm:px-6 py-4 rounded-lg mb-6">
+            <p className="text-sm sm:text-base">{clientsError}</p>
           </div>
         )}
 
         {/* Loading state */}
         {clientsLoading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-indigo-600"></div>
           </div>
         ) : (
           /* Lista de clientes */

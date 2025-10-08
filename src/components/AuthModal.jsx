@@ -1,9 +1,17 @@
 import React from "react";
+import BaseModal from "./BaseModal";
 
 export default function AuthModal({ onClose, onGoogleLogin, error }) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-10 relative animate-fade-in">
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      closeOnBackdrop={true}
+      closeOnEscape={true}
+      size="small"
+      className="p-10"
+    >
+      <div className="relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
@@ -99,6 +107,6 @@ export default function AuthModal({ onClose, onGoogleLogin, error }) {
           </p>
         </div>
       </div>
-    </div>
+    </BaseModal>
   );
 }

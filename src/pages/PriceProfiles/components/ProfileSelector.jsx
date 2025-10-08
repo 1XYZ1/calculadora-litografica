@@ -18,18 +18,18 @@ function ProfileSelector({
   const selectedProfile = profiles.find((p) => p.id === selectedProfileId);
 
   return (
-    <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl shadow-md border border-indigo-100 mb-8">
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+    <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-responsive rounded-xl shadow-md border border-indigo-100 mb-8">
+      <div className="flex flex-col gap-4">
         {/* Selector de perfil */}
-        <div className="flex-1">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <div className="w-full">
+          <label className="block label-responsive text-gray-700 mb-2">
             Perfil de Precios Activo
           </label>
           <div className="relative">
             <select
               value={selectedProfileId || ""}
               onChange={(e) => onSelectProfile(e.target.value)}
-              className="w-full appearance-none px-4 py-3 pr-10 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white shadow-sm cursor-pointer hover:border-indigo-300 transition-colors"
+              className="w-full appearance-none min-h-[44px] px-4 pr-10 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white shadow-sm cursor-pointer hover:border-indigo-300 transition-colors"
               disabled={loading || profiles.length === 0}
             >
               {profiles.length === 0 ? (
@@ -57,16 +57,17 @@ function ProfileSelector({
           </div>
         </div>
 
-        {/* Botones de acción */}
-        <div className="flex flex-wrap gap-2 md:mb-0.5">
+        {/* Botones de acción - Grid responsive */}
+        <div className="grid-responsive-4 gap-2">
           {/* Botón Nuevo Perfil */}
           <button
             onClick={onCreateProfile}
-            className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 flex items-center gap-2"
+            className="btn-primary bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm flex items-center justify-center gap-2"
             disabled={loading}
+            title="Crear nuevo perfil"
           >
             <svg
-              className="w-5 h-5"
+              className="w-4 h-4 sm:w-5 sm:h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -78,18 +79,19 @@ function ProfileSelector({
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            Nuevo
+            <span>Nuevo</span>
           </button>
 
           {/* Botón Duplicar - solo si hay perfil seleccionado */}
           {selectedProfileId && (
             <button
               onClick={onDuplicateProfile}
-              className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 flex items-center gap-2"
+              className="btn-primary bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm flex items-center justify-center gap-2"
               disabled={loading}
+              title="Duplicar perfil actual"
             >
               <svg
-                className="w-5 h-5"
+                className="w-4 h-4 sm:w-5 sm:h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -101,7 +103,7 @@ function ProfileSelector({
                   d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                 />
               </svg>
-              Duplicar
+              <span>Duplicar</span>
             </button>
           )}
 
@@ -109,11 +111,12 @@ function ProfileSelector({
           {selectedProfileId && (
             <button
               onClick={onEditProfile}
-              className="px-4 py-3 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 flex items-center gap-2"
+              className="btn-primary bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-sm flex items-center justify-center gap-2"
               disabled={loading}
+              title="Cambiar nombre del perfil"
             >
               <svg
-                className="w-5 h-5"
+                className="w-4 h-4 sm:w-5 sm:h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -125,7 +128,7 @@ function ProfileSelector({
                   d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                 />
               </svg>
-              Cambiar nombre
+              <span>Editar</span>
             </button>
           )}
 
@@ -133,11 +136,12 @@ function ProfileSelector({
           {selectedProfileId && (
             <button
               onClick={onDeleteProfile}
-              className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200 flex items-center gap-2"
+              className="btn-primary bg-red-600 hover:bg-red-700 text-white font-medium shadow-sm flex items-center justify-center gap-2"
               disabled={loading}
+              title="Eliminar perfil actual"
             >
               <svg
-                className="w-5 h-5"
+                className="w-4 h-4 sm:w-5 sm:h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -149,7 +153,7 @@ function ProfileSelector({
                   d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                 />
               </svg>
-              Eliminar
+              <span>Borrar</span>
             </button>
           )}
         </div>

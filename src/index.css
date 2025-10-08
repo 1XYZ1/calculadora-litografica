@@ -3,6 +3,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Clase para bloquear scroll cuando modal está abierto */
+body.modal-open {
+  overflow: hidden;
+  padding-right: var(--scrollbar-width, 0px);
+}
+
+/* Animación de fade-in para modales */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
 /* Animación para el Toast */
 @keyframes slide-in-right {
   from {
@@ -36,4 +58,164 @@ body {
 
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
+}
+
+/* Animación para transiciones entre pasos del stepper */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Animación para indicadores de carga */
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Animación para progreso de completitud */
+@keyframes progress {
+  from {
+    width: 0%;
+  }
+}
+
+.animate-progress {
+  animation: progress 0.5s ease-out;
+}
+
+/* Transición suave para inputs con validación */
+.input-error {
+  @apply border-red-500 ring-2 ring-red-200;
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+/* Efecto hover mejorado para botones */
+.button-hover {
+  @apply transition-all duration-200 transform;
+}
+
+.button-hover:hover {
+  @apply scale-105 shadow-lg;
+}
+
+.button-hover:active {
+  @apply scale-95;
+}
+
+/* Scroll suave para toda la aplicación */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optimizaciones globales para containers */
+.container-responsive {
+  @apply w-full px-4 md:px-6 lg:px-8;
+}
+
+.container-main {
+  @apply max-w-7xl mx-auto;
+}
+
+/* Botones globales optimizados para touch */
+.btn-primary {
+  @apply min-h-[44px] px-4 py-2.5 text-sm sm:text-base font-medium rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95;
+}
+
+.btn-secondary {
+  @apply min-h-[44px] px-4 py-2.5 text-sm sm:text-base font-medium rounded-lg transition-all duration-200 border;
+}
+
+.btn-compact {
+  @apply min-h-[40px] px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200;
+}
+
+/* Typography responsive */
+.text-responsive-xl {
+  @apply text-2xl sm:text-3xl lg:text-4xl font-bold;
+}
+
+.text-responsive-lg {
+  @apply text-xl sm:text-2xl lg:text-3xl font-semibold;
+}
+
+.text-responsive-md {
+  @apply text-lg sm:text-xl lg:text-2xl font-semibold;
+}
+
+.text-responsive-base {
+  @apply text-base sm:text-lg;
+}
+
+.label-responsive {
+  @apply text-sm sm:text-base font-medium;
+}
+
+.text-responsive-sm {
+  @apply text-base sm:text-lg;
+}
+
+.text-responsive-xs {
+  @apply text-sm sm:text-base font-medium;
+}
+
+/* Grid responsive optimizado */
+.grid-responsive {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+}
+
+.grid-responsive-2 {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+}
+
+.grid-responsive-4 {
+  @apply grid grid-cols-2 sm:grid-cols-4 gap-3;
+}
+
+/* Spacing responsive */
+.space-responsive {
+  @apply space-y-4 sm:space-y-6 lg:space-y-8;
+}
+
+.p-responsive {
+  @apply p-4 md:p-6 lg:p-8;
+}
+
+.px-responsive {
+  @apply px-4 md:px-6 lg:px-8;
+}
+
+.py-responsive {
+  @apply py-4 md:py-6 lg:py-8;
 }

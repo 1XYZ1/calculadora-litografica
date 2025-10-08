@@ -7,7 +7,6 @@ import ConfirmationModal from "../../components/ConfirmationModal";
 import { useQuotationsFetching } from "./hooks/useQuotationsFetching";
 import { useQuotationsFilters } from "./hooks/useQuotationsFilters";
 import { useQuotationsGrouping } from "./hooks/useQuotationsGrouping";
-import { useQuotationsSelection } from "./hooks/useQuotationsSelection";
 import { useQuotationsDeletion } from "./hooks/useQuotationsDeletion";
 import { useNotification } from "./hooks/useNotification";
 import { useClients } from "../../hooks/useClients";
@@ -15,8 +14,6 @@ import { useClients } from "../../hooks/useClients";
 // Componentes
 import SavedQuotationsHeader from "./components/SavedQuotationsHeader";
 import SearchBar from "./components/SearchBar";
-import DateFiltersSection from "./components/DateFiltersSection";
-import BulkActionsBar from "./components/BulkActionsBar";
 import QuotationsListByClient from "./components/QuotationsListByClient";
 import EmptyState from "./components/EmptyState";
 import LoadingSkeleton from "./components/LoadingSkeleton";
@@ -38,12 +35,8 @@ export default function SavedQuotations({ onLoadQuotation }) {
   // Hook: Cargar lista de clientes
   const { clients } = useClients();
 
-  // Hook: Gestión de filtros (fecha + búsqueda + cliente)
+  // Hook: Gestión de filtros (búsqueda + cliente)
   const {
-    startDate,
-    setStartDate,
-    endDate,
-    setEndDate,
     searchQuery,
     setSearchQuery,
     selectedClientId,
@@ -56,17 +49,12 @@ export default function SavedQuotations({ onLoadQuotation }) {
   // Hook: Agrupamiento por cliente
   const { groupedQuotations } = useQuotationsGrouping(filteredQuotations);
 
-  // Hook: Selección múltiple
-  const { selectedQuotations, toggleSelect, selectAll, deselectAll } =
-    useQuotationsSelection(filteredQuotations);
-
   // Hook: Notificaciones
   const { message, showSuccess, showError, clearMessage } = useNotification();
 
   // Hook: Eliminación
   const {
     confirmDeleteSingle,
-    confirmDeleteMultiple,
     executeDelete,
     cancelDelete,
     confirmModalState,
@@ -74,8 +62,6 @@ export default function SavedQuotations({ onLoadQuotation }) {
     db,
     appId,
     userId,
-    selectedQuotations,
-    deselectAll,
     onSuccess: showSuccess,
     onError: showError,
   });
@@ -84,12 +70,6 @@ export default function SavedQuotations({ onLoadQuotation }) {
   const handleClearSearch = useCallback(() => {
     setSearchQuery("");
   }, [setSearchQuery]);
-
-  // Handler: Limpiar filtros de fecha
-  const handleClearDateFilters = useCallback(() => {
-    setStartDate("");
-    setEndDate("");
-  }, [setStartDate, setEndDate]);
 
   // Mostrar error de Firestore si existe
   if (error) {
@@ -106,7 +86,7 @@ export default function SavedQuotations({ onLoadQuotation }) {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-0 sm:p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
       {/* Modales */}
       <ModalMessage message={message} onClose={clearMessage} />
 
@@ -119,7 +99,7 @@ export default function SavedQuotations({ onLoadQuotation }) {
       )}
 
       {/* Contenedor principal */}
-      <div className="max-w-6xl mx-auto bg-white p-8 rounded-2xl shadow-xl">
+      <div className="max-w-7xl mx-auto bg-white p-4 sm:p-6 lg:p-8 rounded-none sm:rounded-2xl shadow-xl">
         <SavedQuotationsHeader totalCount={filteredQuotations.length} />
 
         {/* Búsqueda y filtros */}
@@ -130,15 +110,6 @@ export default function SavedQuotations({ onLoadQuotation }) {
           selectedClientId={selectedClientId}
           onClientFilterChange={setSelectedClientId}
           clients={clients}
-        />
-
-        {/* Filtros de fecha */}
-        <DateFiltersSection
-          startDate={startDate}
-          onStartDateChange={setStartDate}
-          endDate={endDate}
-          onEndDateChange={setEndDate}
-          onClear={handleClearDateFilters}
         />
 
         {/* Botón para limpiar todos los filtros */}
@@ -153,15 +124,6 @@ export default function SavedQuotations({ onLoadQuotation }) {
           </div>
         )}
 
-        {/* Acciones masivas */}
-        <BulkActionsBar
-          selectedCount={selectedQuotations.length}
-          totalCount={filteredQuotations.length}
-          onDeleteSelected={confirmDeleteMultiple}
-          onSelectAll={selectAll}
-          onDeselectAll={deselectAll}
-        />
-
         {/* Contenido principal */}
         {loading ? (
           <LoadingSkeleton />
@@ -170,8 +132,6 @@ export default function SavedQuotations({ onLoadQuotation }) {
         ) : (
           <QuotationsListByClient
             groupedQuotations={groupedQuotations}
-            selectedQuotations={selectedQuotations}
-            onToggleSelect={toggleSelect}
             onEdit={onLoadQuotation}
             onDelete={confirmDeleteSingle}
           />

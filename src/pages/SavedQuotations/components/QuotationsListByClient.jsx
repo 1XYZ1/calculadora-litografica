@@ -4,13 +4,7 @@ import ClientGroupCard from "./ClientGroupCard";
 /**
  * Lista de cotizaciones agrupadas por cliente
  */
-const QuotationsListByClient = ({
-  groupedQuotations,
-  selectedQuotations,
-  onToggleSelect,
-  onEdit,
-  onDelete,
-}) => {
+const QuotationsListByClient = ({ groupedQuotations, onEdit, onDelete }) => {
   const clientNames = Object.keys(groupedQuotations);
 
   if (clientNames.length === 0) {
@@ -30,8 +24,6 @@ const QuotationsListByClient = ({
             totalUSD={group.totalUSD}
             totalBs={group.totalBs}
             count={group.count}
-            selectedQuotations={selectedQuotations}
-            onToggleSelect={onToggleSelect}
             onEdit={onEdit}
             onDelete={onDelete}
           />

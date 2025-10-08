@@ -107,25 +107,29 @@ function PlatesSection({
   };
 
   return (
-    <section className={`${colors.bg} p-6 rounded-xl shadow-md`}>
+    <section className={`${colors.bg} p-4 sm:p-6 rounded-xl shadow-md`}>
       <h3
-        className={`text-2xl font-bold ${colors.title} mb-6 flex items-center gap-2`}
+        className={`text-xl sm:text-2xl font-bold ${colors.title} mb-4 sm:mb-6 flex items-center gap-2`}
       >
-        <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
+        <svg
+          className="w-6 h-6 sm:w-7 sm:h-7"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
           <path
             fillRule="evenodd"
             d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
             clipRule="evenodd"
           />
         </svg>
-        Precios de Planchas
+        <span className="text-xl sm:text-2xl">Precios de Planchas</span>
       </h3>
 
       {/* Formulario para añadir nueva plancha */}
-      <div className="bg-white p-6 rounded-xl shadow-md mb-6 border-2 border-gray-200">
-        <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md mb-4 sm:mb-6 border-2 border-gray-200">
+        <h4 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
           <svg
-            className="w-5 h-5 text-green-600"
+            className="w-4 h-4 sm:w-5 sm:h-5 text-green-600"
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -135,14 +139,16 @@ function PlatesSection({
               clipRule="evenodd"
             />
           </svg>
-          Añadir Nuevo Tamaño de Plancha
+          <span className="text-base sm:text-lg">
+            Añadir Nuevo Tamaño de Plancha
+          </span>
         </h4>
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr,1.5fr,auto] gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr,1.5fr,auto] gap-3 sm:gap-4">
           <div className="relative">
             <select
               value={newPlateSizeName}
               onChange={(e) => setNewPlateSizeName(e.target.value)}
-              className="w-full appearance-none p-3 pr-10 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 cursor-pointer"
+              className="w-full appearance-none p-2.5 sm:p-3 pr-10 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 cursor-pointer text-sm sm:text-base"
               disabled={availablePlateOptions.length === 0}
             >
               <option value="">
@@ -172,12 +178,12 @@ function PlatesSection({
             placeholder="Precio (ej. 10.00)"
             value={newPlateSizePrice}
             onChange={(e) => setNewPlateSizePrice(e.target.value)}
-            className="p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            className="p-2.5 sm:p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm sm:text-base"
           />
           <button
             onClick={addPlateSize}
             disabled={availablePlateOptions.length === 0}
-            className={`${colors.button} text-white font-bold py-3 px-6 rounded-lg transition duration-300 shadow-md hover:shadow-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`${colors.button} min-h-[44px] text-white font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg transition duration-300 shadow-md hover:shadow-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base`}
           >
             Añadir Plancha
           </button>
@@ -185,12 +191,12 @@ function PlatesSection({
       </div>
 
       {/* Lista de planchas existentes */}
-      <div className="bg-white p-6 rounded-xl shadow-md border-2 border-gray-200">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md border-2 border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-5">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
               <svg
-                className="w-6 h-6 text-green-600"
+                className="w-5 h-5 sm:w-6 sm:h-6 text-green-600"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -202,10 +208,10 @@ function PlatesSection({
               </svg>
             </div>
             <div>
-              <h4 className="text-xl font-bold text-gray-800">
+              <h4 className="text-lg sm:text-xl font-bold text-gray-800">
                 Planchas Existentes
               </h4>
-              <p className="text-sm text-gray-500">
+              <p className="text-xs sm:text-sm text-gray-500">
                 {plateSizes.length} tamaños configurados
               </p>
             </div>
@@ -217,7 +223,7 @@ function PlatesSection({
             disabled={loadingPlatesAll || !hasChanges}
             className={`${
               colors.button
-            } text-white font-bold py-2 md:py-3 px-3 md:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 relative text-sm md:text-base ${
+            } min-h-[44px] text-white font-bold py-2 sm:py-3 px-3 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative text-sm sm:text-base ${
               hasChanges ? "ring-2 ring-amber-400 ring-offset-2" : ""
             }`}
           >
@@ -270,7 +276,7 @@ function PlatesSection({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {plateSizes.map((plate) => (
             <PriceField key={plate.id} plate={plate} />
           ))}

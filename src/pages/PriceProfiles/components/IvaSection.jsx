@@ -23,27 +23,31 @@ function IvaSection({
   }, [ivaPercentageInput, ivaPercentageData]);
 
   return (
-    <section className={`${colors.bg} p-6 rounded-xl shadow-md`}>
+    <section className={`${colors.bg} p-4 sm:p-6 rounded-xl shadow-md`}>
       <h3
-        className={`text-2xl font-bold ${colors.title} mb-6 flex items-center gap-2`}
+        className={`text-xl sm:text-2xl font-bold ${colors.title} mb-4 sm:mb-6 flex items-center gap-2`}
       >
-        <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
+        <svg
+          className="w-6 h-6 sm:w-7 sm:h-7"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
           <path
             fillRule="evenodd"
             d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zm1 14a1 1 0 100-2 1 1 0 000 2zm5-1.757l4.9-4.9a2 2 0 000-2.828L13.485 5.1a2 2 0 00-2.828 0L10 5.757v8.486zM16 18H9.071l6-6H16a2 2 0 012 2v2a2 2 0 01-2 2z"
             clipRule="evenodd"
           />
         </svg>
-        Porcentaje de IVA
+        <span className="text-xl sm:text-2xl">Porcentaje de IVA</span>
       </h3>
 
-      <div className="bg-white p-6 rounded-xl shadow-md border-2 border-gray-200">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md border-2 border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-center">
           {/* Badge con valor actual */}
-          <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-6 shadow-sm border-2 border-pink-200">
+          <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-4 sm:p-6 shadow-sm border-2 border-pink-200">
             <div className="flex items-center gap-2 mb-2">
               <svg
-                className="w-5 h-5 text-pink-600"
+                className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -53,9 +57,11 @@ function IvaSection({
                   clipRule="evenodd"
                 />
               </svg>
-              <p className="text-sm text-gray-700 font-medium">IVA Actual</p>
+              <p className="text-xs sm:text-sm text-gray-700 font-medium">
+                IVA Actual
+              </p>
             </div>
-            <p className="text-4xl font-bold text-pink-600">
+            <p className="text-3xl sm:text-4xl font-bold text-pink-600">
               {ivaPercentageData !== undefined
                 ? (ivaPercentageData * 100).toFixed(2)
                 : "0.00"}
@@ -80,7 +86,7 @@ function IvaSection({
               value={ivaPercentageInput}
               onChange={(e) => setIvaPercentageInput(e.target.value)}
               disabled={loading}
-              className={`w-full p-3 border-2 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+              className={`w-full p-2.5 sm:p-3 border-2 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base ${
                 hasChanged
                   ? "border-amber-400 bg-amber-50"
                   : "border-gray-300 bg-white"
@@ -97,7 +103,7 @@ function IvaSection({
             disabled={loading || !hasChanged}
             className={`${
               colors.button
-            } text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg h-fit disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative ${
+            } min-h-[44px] text-white font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg h-fit disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative text-sm sm:text-base ${
               hasChanged ? "ring-2 ring-amber-400 ring-offset-2" : ""
             }`}
           >

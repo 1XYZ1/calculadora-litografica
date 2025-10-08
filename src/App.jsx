@@ -55,8 +55,8 @@ function AppContent() {
       />
 
       {!user ? (
-        <div className="flex flex-col items-center justify-center min-h-[85vh] p-4">
-          <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-lg w-full text-center">
+        <div className="flex flex-col items-center justify-center min-h-[85vh] container-responsive">
+          <div className="bg-white rounded-3xl shadow-2xl p-responsive max-w-lg w-full text-center">
             <div className="mb-8">
               <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mb-6 shadow-lg">
                 <svg
@@ -74,15 +74,15 @@ function AppContent() {
                 </svg>
               </div>
             </div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-3">
+            <h1 className="text-responsive-xl text-gray-800 mb-3">
               Litografía Pro
             </h1>
-            <p className="text-gray-500 mb-10 text-lg">
+            <p className="text-gray-500 mb-10 text-responsive-base">
               Tu solución profesional para cotizaciones de litografía
             </p>
             <button
               onClick={() => setShowAuthModal(true)}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+              className="w-full btn-primary bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl"
             >
               Comenzar
             </button>
@@ -135,11 +135,12 @@ function AppContent() {
           </div>
         </div>
       ) : (
-        <main className="pt-4">
+        <main className="pt-4 container-responsive container-main">
           {currentPage === "calculator" && (
             <Calculator
               loadedQuotation={loadedQuotationData}
               setLoadedQuotation={setLoadedQuotationData}
+              onNavigateToClients={() => setCurrentPage("clients")}
             />
           )}
           {currentPage === "clients" && <Clients />}

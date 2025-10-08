@@ -12,20 +12,13 @@ export const useItemForm = ({
   const [currentItem, setCurrentItem] = useState({
     ...initialItemState,
     id: crypto.randomUUID(),
-    quotationName: mainQuotationName,
+    quotationName: "", // Campo independiente para el nombre del item
   });
 
   const [editingItemId, setEditingItemId] = useState(null);
 
-  // Sincronizar nombre de cotización cuando cambia
-  useEffect(() => {
-    if (!editingItemId) {
-      setCurrentItem((prev) => ({
-        ...prev,
-        quotationName: mainQuotationName,
-      }));
-    }
-  }, [mainQuotationName, editingItemId]);
+  // NO sincronizar nombre de cotización con mainQuotationName
+  // El campo quotationName del item es independiente del nombre del presupuesto
 
   // Auto-selección de plancha y máquina según área de impresión
   useEffect(() => {
@@ -119,10 +112,10 @@ export const useItemForm = ({
     setCurrentItem({
       ...initialItemState,
       id: crypto.randomUUID(),
-      quotationName: mainQuotationName,
+      quotationName: "", // No heredar el nombre del presupuesto
     });
     setEditingItemId(null);
-  }, [mainQuotationName]);
+  }, []);
 
   // Cargar item para edición
   const loadItemForEdit = useCallback((item) => {
