@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { doc, updateDoc, setDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { useFirebase } from "../../../context/FirebaseContext";
 import {
@@ -29,6 +29,10 @@ export function usePaperManagement(papers, notification, priceProfileId) {
   // Estado de inputs para actualizar precios de papeles existentes
   const [paperPriceInputs, setPaperPriceInputs] = useState({});
 
+  // Ref para rastrear si ya se inicializaron los valores
+  const initializedRef = useRef(false);
+  const lastProfileIdRef = useRef(null);
+
   // Reiniciar formulario de nuevo papel cuando cambia el perfil
   useEffect(() => {
     setNewPaperName("");
@@ -36,16 +40,26 @@ export function usePaperManagement(papers, notification, priceProfileId) {
   }, [priceProfileId]);
 
   // Sincronizar los inputs con los precios actuales de papers
-  // Solo sincronizar cuando cambia el perfil, NO cada vez que papers se actualiza
-  // Esto evita que los inputs se sobrescriban mientras el usuario está editando
+  // Solo sincronizar una vez por perfil cuando los datos se cargan
   useEffect(() => {
-    const initialInputs = {};
-    papers.forEach((paper) => {
-      initialInputs[paper.id] =
-        paper.pricePerSheet !== undefined ? paper.pricePerSheet.toString() : "";
-    });
-    setPaperPriceInputs(initialInputs);
-  }, [priceProfileId]); // Solo cuando cambia el perfil
+    // Si cambia el perfil, marcar como no inicializado
+    if (lastProfileIdRef.current !== priceProfileId) {
+      initializedRef.current = false;
+      lastProfileIdRef.current = priceProfileId;
+      setPaperPriceInputs({});
+    }
+
+    // Solo inicializar una vez por perfil y cuando tengamos datos
+    if (!initializedRef.current && papers.length > 0) {
+      const initialInputs = {};
+      papers.forEach((paper) => {
+        initialInputs[paper.id] =
+          paper.pricePerSheet !== undefined ? paper.pricePerSheet.toString() : "";
+      });
+      setPaperPriceInputs(initialInputs);
+      initializedRef.current = true;
+    }
+  }, [priceProfileId, papers]);
 
   // Handler para cambiar el precio de un papel existente
   const handlePaperPriceInputChange = useCallback((paperId, value) => {

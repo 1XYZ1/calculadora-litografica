@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   collection,
   doc,
@@ -47,6 +47,11 @@ export function useMaterialsManagement(
   const [machinePriceInputs, setMachinePriceInputs] = useState({});
   const [loadingMachinesAll, setLoadingMachinesAll] = useState("");
 
+  // Refs para rastrear inicializaciones
+  const platesInitializedRef = useRef(false);
+  const machinesInitializedRef = useRef(false);
+  const lastProfileIdRef = useRef(null);
+
   // Reiniciar formularios de nueva plancha y máquina cuando cambia el perfil
   useEffect(() => {
     setNewPlateSizeName("");
@@ -57,23 +62,43 @@ export function useMaterialsManagement(
 
   // Sincronizar inputs de planchas cuando cambia el perfil
   useEffect(() => {
-    const initialInputs = {};
-    plateSizes.forEach((plate) => {
-      initialInputs[plate.id] =
-        plate.price !== undefined ? plate.price.toString() : "";
-    });
-    setPlatePriceInputs(initialInputs);
-  }, [priceProfileId]);
+    // Si cambia el perfil, marcar como no inicializado
+    if (lastProfileIdRef.current !== priceProfileId) {
+      platesInitializedRef.current = false;
+      lastProfileIdRef.current = priceProfileId;
+      setPlatePriceInputs({});
+    }
+
+    // Solo inicializar una vez por perfil y cuando tengamos datos
+    if (!platesInitializedRef.current && plateSizes.length > 0) {
+      const initialInputs = {};
+      plateSizes.forEach((plate) => {
+        initialInputs[plate.id] =
+          plate.price !== undefined ? plate.price.toString() : "";
+      });
+      setPlatePriceInputs(initialInputs);
+      platesInitializedRef.current = true;
+    }
+  }, [priceProfileId, plateSizes]);
 
   // Sincronizar inputs de máquinas cuando cambia el perfil
   useEffect(() => {
-    const initialInputs = {};
-    machineTypes.forEach((machine) => {
-      initialInputs[machine.id] =
-        machine.millarPrice !== undefined ? machine.millarPrice.toString() : "";
-    });
-    setMachinePriceInputs(initialInputs);
-  }, [priceProfileId]);
+    // Si cambia el perfil, marcar como no inicializado
+    if (lastProfileIdRef.current !== priceProfileId) {
+      machinesInitializedRef.current = false;
+    }
+
+    // Solo inicializar una vez por perfil y cuando tengamos datos
+    if (!machinesInitializedRef.current && machineTypes.length > 0) {
+      const initialInputs = {};
+      machineTypes.forEach((machine) => {
+        initialInputs[machine.id] =
+          machine.millarPrice !== undefined ? machine.millarPrice.toString() : "";
+      });
+      setMachinePriceInputs(initialInputs);
+      machinesInitializedRef.current = true;
+    }
+  }, [priceProfileId, machineTypes]);
 
   // Referencias a colecciones
   const getPlateCollectionRef = useCallback(() => {

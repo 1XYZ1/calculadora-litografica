@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { doc, setDoc } from "firebase/firestore";
 import { useFirebase } from "../../../context/FirebaseContext";
 import { validatePrice, formatIdForMessage } from "../utils/priceValidation";
@@ -48,62 +48,78 @@ export function useFinishingManagement(
   // Estados de loading granulares por tipo de operación
   const [loadingItemId, setLoadingItemId] = useState(null);
 
+  // Ref para rastrear si ya se inicializaron los valores
+  const initializedRef = useRef(false);
+  const lastProfileIdRef = useRef(null);
+
+  // Sincronizar inputs con precios de Firestore solo cuando cambia el perfil
+  useEffect(() => {
+    // Si cambia el perfil, marcar como no inicializado
+    if (lastProfileIdRef.current !== priceProfileId) {
+      initializedRef.current = false;
+      lastProfileIdRef.current = priceProfileId;
+    }
+
+    // Solo inicializar una vez por perfil y cuando tengamos datos
+    if (!initializedRef.current && finishingPrices && Object.keys(finishingPrices).length > 0) {
+      // Actualizar inputs de UV
+      setUvPricesInput({
+        half_sheet: finishingPrices["uv_half_sheet"]?.toString() || "",
+        quarter_sheet: finishingPrices["uv_quarter_sheet"]?.toString() || "",
+        tabloide: finishingPrices["uv_tabloide"]?.toString() || "",
+        oficio: finishingPrices["uv_oficio"]?.toString() || "",
+        carta: finishingPrices["uv_carta"]?.toString() || "",
+        quarter_sheet_digital:
+          finishingPrices["uv_quarter_sheet_digital"]?.toString() || "",
+      });
+
+      // Actualizar otros acabados
+      setRematePriceInput(
+        finishingPrices["remate"] !== undefined
+          ? finishingPrices["remate"].toString()
+          : ""
+      );
+      setLaminadoMatePriceInput(
+        finishingPrices["laminado_mate"] !== undefined
+          ? finishingPrices["laminado_mate"].toString()
+          : ""
+      );
+      setLaminadoBrillantePriceInput(
+        finishingPrices["laminado_brillante"] !== undefined
+          ? finishingPrices["laminado_brillante"].toString()
+          : ""
+      );
+      setSignadoPriceInput(
+        finishingPrices["signado"] !== undefined
+          ? finishingPrices["signado"].toString()
+          : ""
+      );
+      setTroqueladoPriceInput(
+        finishingPrices["troquelado"] !== undefined
+          ? finishingPrices["troquelado"].toString()
+          : ""
+      );
+
+      // Actualizar inputs de impresión digital
+      setDigitalQuarterTiroInput(
+        finishingPrices["digital_quarter_tiro"] !== undefined
+          ? finishingPrices["digital_quarter_tiro"].toString()
+          : ""
+      );
+      setDigitalQuarterTiroRetiroInput(
+        finishingPrices["digital_quarter_tiro_retiro"] !== undefined
+          ? finishingPrices["digital_quarter_tiro_retiro"].toString()
+          : ""
+      );
+
+      initializedRef.current = true;
+    }
+  }, [priceProfileId, finishingPrices]);
+
   // Sincronizar inputs con precios de Firestore
   // Solo sincronizar cuando cambia el perfil, NO cada vez que finishingPrices se actualiza
   // Esto evita que los inputs se reinicien mientras el usuario está editando
-  useEffect(() => {
-    if (!finishingPrices) return;
-
-    // Actualizar inputs de UV
-    setUvPricesInput({
-      half_sheet: finishingPrices["uv_half_sheet"]?.toString() || "",
-      quarter_sheet: finishingPrices["uv_quarter_sheet"]?.toString() || "",
-      tabloide: finishingPrices["uv_tabloide"]?.toString() || "",
-      oficio: finishingPrices["uv_oficio"]?.toString() || "",
-      carta: finishingPrices["uv_carta"]?.toString() || "",
-      quarter_sheet_digital:
-        finishingPrices["uv_quarter_sheet_digital"]?.toString() || "",
-    });
-
-    // Actualizar otros acabados
-    setRematePriceInput(
-      finishingPrices["remate"] !== undefined
-        ? finishingPrices["remate"].toString()
-        : ""
-    );
-    setLaminadoMatePriceInput(
-      finishingPrices["laminado_mate"] !== undefined
-        ? finishingPrices["laminado_mate"].toString()
-        : ""
-    );
-    setLaminadoBrillantePriceInput(
-      finishingPrices["laminado_brillante"] !== undefined
-        ? finishingPrices["laminado_brillante"].toString()
-        : ""
-    );
-    setSignadoPriceInput(
-      finishingPrices["signado"] !== undefined
-        ? finishingPrices["signado"].toString()
-        : ""
-    );
-    setTroqueladoPriceInput(
-      finishingPrices["troquelado"] !== undefined
-        ? finishingPrices["troquelado"].toString()
-        : ""
-    );
-
-    // Actualizar inputs de impresión digital
-    setDigitalQuarterTiroInput(
-      finishingPrices["digital_quarter_tiro"] !== undefined
-        ? finishingPrices["digital_quarter_tiro"].toString()
-        : ""
-    );
-    setDigitalQuarterTiroRetiroInput(
-      finishingPrices["digital_quarter_tiro_retiro"] !== undefined
-        ? finishingPrices["digital_quarter_tiro_retiro"].toString()
-        : ""
-    );
-  }, [priceProfileId]); // Solo cuando cambia el perfil
+  // ELIMINADO: No sincronizar automáticamente. Los inputs son independientes hasta que el usuario guarde.
 
   // Handler para cambiar precios de UV
   const handleUvPriceChange = useCallback((size, value) => {

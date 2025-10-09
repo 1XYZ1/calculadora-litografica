@@ -2,6 +2,80 @@ import React, { useMemo } from "react";
 import { SECTION_COLORS, MACHINE_TYPE_OPTIONS } from "../../../utils/constants";
 
 /**
+ * Componente individual para campo de precio de máquina
+ * Memoizado para evitar re-renders innecesarios
+ */
+const PriceField = React.memo(({
+  machine,
+  machinePriceInputs,
+  handleMachinePriceInputChange,
+  deleteMachineType,
+  loadingMachinesAll
+}) => {
+  // Detectar cambios pendientes para esta máquina específica
+  const hasChanged = useMemo(() => {
+    const inputValue = parseFloat(machinePriceInputs[machine.id]);
+    return !isNaN(inputValue) && inputValue !== machine.millarPrice;
+  }, [machinePriceInputs, machine.id, machine.millarPrice]);
+
+  return (
+    <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200 transition-all duration-200 hover:border-gray-300">
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+          {machine.name}
+          {hasChanged && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+              Modificado
+            </span>
+          )}
+        </label>
+        <button
+          onClick={() => deleteMachineType(machine.id)}
+          disabled={loadingMachinesAll}
+          className="text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
+          title="Eliminar máquina"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
+      <input
+        type="number"
+        step="0.01"
+        placeholder="0.00"
+        value={machinePriceInputs[machine.id] || ""}
+        onChange={(e) =>
+          handleMachinePriceInputChange(machine.id, e.target.value)
+        }
+        disabled={loadingMachinesAll}
+        className={`w-full p-3 border-2 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+          hasChanged
+            ? "border-amber-400 bg-amber-50"
+            : "border-gray-300 bg-white"
+        }`}
+      />
+      <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fillRule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+            clipRule="evenodd"
+          />
+        </svg>
+        Actual: ${machine.millarPrice?.toFixed(2) || "0.00"} /millar
+      </p>
+    </div>
+  );
+});
+
+PriceField.displayName = 'PriceField';
+
+/**
  * Sección para gestionar tipos de máquina y precios por millar con UX mejorada:
  * - Edición inline de todos los precios
  * - Actualización masiva con un solo botón
@@ -33,80 +107,13 @@ function MachinesSection({
     );
   }, [machineTypes]);
 
-  // Detectar cambios pendientes
-  const hasChanges = useMemo(() => {
+  // Detectar si hay cambios pendientes en alguna máquina
+  const hasAnyChanges = useMemo(() => {
     return machineTypes.some((machine) => {
-      const currentValue = machine.millarPrice;
-      const inputValue = parseFloat(machinePriceInputs[machine.id]);
-      return !isNaN(inputValue) && inputValue !== currentValue;
-    });
-  }, [machinePriceInputs, machineTypes]);
-
-  // Componente reutilizable para campo de precio
-  const PriceField = ({ machine }) => {
-    const hasChanged = useMemo(() => {
       const inputValue = parseFloat(machinePriceInputs[machine.id]);
       return !isNaN(inputValue) && inputValue !== machine.millarPrice;
-    }, [machine]);
-
-    return (
-      <div
-        className={`bg-gray-50 p-4 rounded-lg border-2 transition-all duration-200 hover:border-gray-300 ${
-          hasChanged ? "border-amber-400" : "border-gray-200"
-        }`}
-      >
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium text-gray-700">
-            {machine.name}
-            {hasChanged && (
-              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                Modificado
-              </span>
-            )}
-          </label>
-          <button
-            onClick={() => deleteMachineType(machine.id)}
-            disabled={loadingMachinesAll}
-            className="text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
-            title="Eliminar máquina"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
-        </div>
-        <input
-          type="number"
-          step="0.01"
-          placeholder="0.00"
-          value={machinePriceInputs[machine.id] || ""}
-          onChange={(e) =>
-            handleMachinePriceInputChange(machine.id, e.target.value)
-          }
-          disabled={loadingMachinesAll}
-          className={`w-full p-3 border-2 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-            hasChanged
-              ? "border-amber-400 bg-amber-50"
-              : "border-gray-300 bg-white"
-          }`}
-        />
-        <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Actual: ${machine.millarPrice?.toFixed(2) || "0.00"} /millar
-        </p>
-      </div>
-    );
-  };
+    });
+  }, [machineTypes, machinePriceInputs]);
 
   return (
     <section className={`${colors.bg} p-4 sm:p-6 rounded-xl shadow-md`}>
@@ -224,11 +231,9 @@ function MachinesSection({
           {/* Botón de actualización masiva */}
           <button
             onClick={updateAllMachinePrices}
-            disabled={loadingMachinesAll || !hasChanges}
-            className={`${
-              colors.button
-            } min-h-[44px] text-white font-bold py-2 sm:py-3 px-3 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative text-sm sm:text-base ${
-              hasChanges ? "ring-2 ring-amber-400 ring-offset-2" : ""
+            disabled={loadingMachinesAll || !hasAnyChanges}
+            className={`${colors.button} min-h-[44px] text-white font-bold py-2 sm:py-3 px-3 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base relative ${
+              hasAnyChanges ? "ring-2 ring-amber-400 ring-offset-2" : ""
             }`}
           >
             {loadingMachinesAll ? (
@@ -269,7 +274,7 @@ function MachinesSection({
                   />
                 </svg>
                 Actualizar
-                {hasChanges && (
+                {hasAnyChanges && (
                   <span className="absolute -top-1 -right-1 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
@@ -282,7 +287,14 @@ function MachinesSection({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {machineTypes.map((machine) => (
-            <PriceField key={machine.id} machine={machine} />
+            <PriceField
+              key={machine.id}
+              machine={machine}
+              machinePriceInputs={machinePriceInputs}
+              handleMachinePriceInputChange={handleMachinePriceInputChange}
+              deleteMachineType={deleteMachineType}
+              loadingMachinesAll={loadingMachinesAll}
+            />
           ))}
         </div>
       </div>

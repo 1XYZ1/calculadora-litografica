@@ -2,6 +2,65 @@ import React, { useMemo } from "react";
 import { SECTION_COLORS, UV_SIZE_KEYS } from "../../../utils/constants";
 
 /**
+ * Componente individual para campo de precio de acabado
+ * Memoizado para evitar re-renders innecesarios
+ */
+const PriceField = React.memo(({
+  label,
+  value,
+  onChange,
+  currentPrice,
+  unit,
+  step = "0.01",
+  disabled,
+}) => {
+  // Detectar cambios pendientes para este campo específico
+  const hasChanged = useMemo(() => {
+    const inputValue = parseFloat(value);
+    return !isNaN(inputValue) && inputValue !== currentPrice;
+  }, [value, currentPrice]);
+
+  return (
+    <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200 transition-all duration-200 hover:border-gray-300">
+      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+        {label}
+        {hasChanged && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+            Modificado
+          </span>
+        )}
+      </label>
+      <input
+        type="number"
+        step={step}
+        placeholder="0.00"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className={`w-full p-3 border-2 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+          hasChanged
+            ? "border-amber-400 bg-amber-50"
+            : "border-gray-300 bg-white"
+        }`}
+      />
+      <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fillRule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+            clipRule="evenodd"
+          />
+        </svg>
+        Actual: ${currentPrice?.toFixed(step === "0.001" ? 3 : 2) || "0.00"}{" "}
+        {unit}
+      </p>
+    </div>
+  );
+});
+
+PriceField.displayName = 'PriceField';
+
+/**
  * Sección para gestionar precios de acabados con UX mejorada:
  * - 2 botones de actualización masiva (UV y Otros)
  * - Indicadores visuales de cambios pendientes
@@ -28,96 +87,36 @@ function FinishingSection({
 }) {
   const colors = SECTION_COLORS.finishing;
 
-  // Detectar cambios pendientes en UV
-  const uvHasChanges = useMemo(() => {
+  // Detectar si hay cambios pendientes en UV
+  const hasUvChanges = useMemo(() => {
     return UV_SIZE_KEYS.some((size) => {
-      const currentValue = finishingPrices[`uv_${size.key}`];
       const inputValue = parseFloat(uvPricesInput[size.key]);
-      return !isNaN(inputValue) && inputValue !== currentValue;
+      return !isNaN(inputValue) && inputValue !== finishingPrices[`uv_${size.key}`];
     });
   }, [uvPricesInput, finishingPrices]);
 
-  // Detectar cambios pendientes en otros acabados
-  const otherFinishingsHaveChanges = useMemo(() => {
-    const checks = [
-      { input: rematePriceInput, current: finishingPrices["remate"] },
-      {
-        input: laminadoMatePriceInput,
-        current: finishingPrices["laminado_mate"],
-      },
-      {
-        input: laminadoBrillantePriceInput,
-        current: finishingPrices["laminado_brillante"],
-      },
-      { input: signadoPriceInput, current: finishingPrices["signado"] },
-      { input: troqueladoPriceInput, current: finishingPrices["troquelado"] },
-    ];
+  // Detectar si hay cambios pendientes en otros acabados
+  const hasOtherChanges = useMemo(() => {
+    const remateChanged = !isNaN(parseFloat(rematePriceInput)) &&
+      parseFloat(rematePriceInput) !== finishingPrices["remate"];
+    const mateChanged = !isNaN(parseFloat(laminadoMatePriceInput)) &&
+      parseFloat(laminadoMatePriceInput) !== finishingPrices["laminado_mate"];
+    const brillanteChanged = !isNaN(parseFloat(laminadoBrillantePriceInput)) &&
+      parseFloat(laminadoBrillantePriceInput) !== finishingPrices["laminado_brillante"];
+    const signadoChanged = !isNaN(parseFloat(signadoPriceInput)) &&
+      parseFloat(signadoPriceInput) !== finishingPrices["signado"];
+    const troqueladoChanged = !isNaN(parseFloat(troqueladoPriceInput)) &&
+      parseFloat(troqueladoPriceInput) !== finishingPrices["troquelado"];
 
-    return checks.some(({ input, current }) => {
-      const inputValue = parseFloat(input);
-      return !isNaN(inputValue) && inputValue !== current;
-    });
+    return remateChanged || mateChanged || brillanteChanged || signadoChanged || troqueladoChanged;
   }, [
     rematePriceInput,
     laminadoMatePriceInput,
     laminadoBrillantePriceInput,
     signadoPriceInput,
     troqueladoPriceInput,
-    finishingPrices,
+    finishingPrices
   ]);
-
-  // Componente reutilizable para campo de precio
-  const PriceField = ({
-    label,
-    value,
-    onChange,
-    currentPrice,
-    unit,
-    step = "0.01",
-    disabled,
-  }) => {
-    const hasChanged = useMemo(() => {
-      const inputValue = parseFloat(value);
-      return !isNaN(inputValue) && inputValue !== currentPrice;
-    }, [value, currentPrice]);
-
-    return (
-      <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200 transition-all duration-200 hover:border-gray-300">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}
-          {hasChanged && (
-            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-              Modificado
-            </span>
-          )}
-        </label>
-        <input
-          type="number"
-          step={step}
-          placeholder="0.00"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={disabled}
-          className={`w-full p-3 border-2 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-            hasChanged
-              ? "border-amber-400 bg-amber-50"
-              : "border-gray-300 bg-white"
-          }`}
-        />
-        <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Actual: ${currentPrice?.toFixed(step === "0.001" ? 3 : 2) || "0.00"}{" "}
-          {unit}
-        </p>
-      </div>
-    );
-  };
 
   return (
     <section className={`${colors.bg} p-4 sm:p-6 rounded-xl shadow-md`}>
@@ -164,11 +163,9 @@ function FinishingSection({
           {/* Botón de actualización masiva de UV */}
           <button
             onClick={updateAllUvPrices}
-            disabled={loadingItemId === "uv_all" || !uvHasChanges}
-            className={`${
-              colors.button
-            } min-h-[44px] text-white font-bold py-2 sm:py-3 px-3 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative text-sm sm:text-base ${
-              uvHasChanges ? "ring-2 ring-amber-400 ring-offset-2" : ""
+            disabled={loadingItemId === "uv_all" || !hasUvChanges}
+            className={`${colors.button} min-h-[44px] text-white font-bold py-2 sm:py-3 px-3 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base relative ${
+              hasUvChanges ? "ring-2 ring-amber-400 ring-offset-2" : ""
             }`}
           >
             {loadingItemId === "uv_all" ? (
@@ -209,7 +206,7 @@ function FinishingSection({
                   />
                 </svg>
                 Actualizar
-                {uvHasChanges && (
+                {hasUvChanges && (
                   <span className="absolute -top-1 -right-1 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
@@ -266,15 +263,9 @@ function FinishingSection({
           {/* Botón de actualización masiva de otros acabados */}
           <button
             onClick={updateAllOtherFinishings}
-            disabled={
-              loadingItemId === "other_all" || !otherFinishingsHaveChanges
-            }
-            className={`${
-              colors.button
-            } min-h-[44px] text-white font-bold py-2 sm:py-3 px-3 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative text-sm sm:text-base ${
-              otherFinishingsHaveChanges
-                ? "ring-2 ring-amber-400 ring-offset-2"
-                : ""
+            disabled={loadingItemId === "other_all" || !hasOtherChanges}
+            className={`${colors.button} min-h-[44px] text-white font-bold py-2 sm:py-3 px-3 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base relative ${
+              hasOtherChanges ? "ring-2 ring-amber-400 ring-offset-2" : ""
             }`}
           >
             {loadingItemId === "other_all" ? (
@@ -315,7 +306,7 @@ function FinishingSection({
                   />
                 </svg>
                 Actualizar
-                {otherFinishingsHaveChanges && (
+                {hasOtherChanges && (
                   <span className="absolute -top-1 -right-1 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>

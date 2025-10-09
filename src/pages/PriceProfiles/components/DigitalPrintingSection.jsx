@@ -2,6 +2,63 @@ import React, { useMemo } from "react";
 import { SECTION_COLORS } from "../../../utils/constants";
 
 /**
+ * Componente individual para campo de precio de impresión digital
+ * Memoizado para evitar re-renders innecesarios
+ */
+const PriceField = React.memo(({
+  label,
+  value,
+  onChange,
+  currentPrice,
+  description,
+  disabled,
+}) => {
+  // Detectar cambios pendientes para este campo específico
+  const hasChanged = useMemo(() => {
+    const inputValue = parseFloat(value);
+    return !isNaN(inputValue) && inputValue !== currentPrice;
+  }, [value, currentPrice]);
+
+  return (
+    <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200 transition-all duration-200 hover:border-gray-300">
+      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+        {label}
+        {hasChanged && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+            Modificado
+          </span>
+        )}
+      </label>
+      <input
+        type="number"
+        step="0.01"
+        placeholder="0.00"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className={`w-full p-3 border-2 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+          hasChanged
+            ? "border-amber-400 bg-amber-50"
+            : "border-gray-300 bg-white"
+        }`}
+      />
+      <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fillRule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+            clipRule="evenodd"
+          />
+        </svg>
+        Actual: ${currentPrice?.toFixed(2) || "0.00"} {description}
+      </p>
+    </div>
+  );
+});
+
+PriceField.displayName = 'PriceField';
+
+/**
  * Sección para gestionar precios de impresión digital con UX mejorada:
  * - Un solo botón para actualizar ambos precios
  * - Indicadores visuales de cambios pendientes
@@ -19,72 +76,15 @@ function DigitalPrintingSection({
 }) {
   const colors = SECTION_COLORS.digital;
 
-  // Detectar cambios pendientes
-  const hasChanges = useMemo(() => {
-    const tiroChanged =
-      !isNaN(parseFloat(digitalQuarterTiroInput)) &&
-      parseFloat(digitalQuarterTiroInput) !==
-        finishingPrices["digital_quarter_tiro"];
-    const tiroRetiroChanged =
-      !isNaN(parseFloat(digitalQuarterTiroRetiroInput)) &&
-      parseFloat(digitalQuarterTiroRetiroInput) !==
-        finishingPrices["digital_quarter_tiro_retiro"];
+  // Detectar si hay cambios pendientes
+  const hasAnyChanges = useMemo(() => {
+    const tiroChanged = !isNaN(parseFloat(digitalQuarterTiroInput)) &&
+      parseFloat(digitalQuarterTiroInput) !== finishingPrices["digital_quarter_tiro"];
+    const tiroRetiroChanged = !isNaN(parseFloat(digitalQuarterTiroRetiroInput)) &&
+      parseFloat(digitalQuarterTiroRetiroInput) !== finishingPrices["digital_quarter_tiro_retiro"];
+
     return tiroChanged || tiroRetiroChanged;
   }, [digitalQuarterTiroInput, digitalQuarterTiroRetiroInput, finishingPrices]);
-
-  // Componente reutilizable para campo de precio
-  const PriceField = ({
-    label,
-    value,
-    onChange,
-    currentPrice,
-    description,
-  }) => {
-    const hasChanged = useMemo(() => {
-      const inputValue = parseFloat(value);
-      return !isNaN(inputValue) && inputValue !== currentPrice;
-    }, [value, currentPrice]);
-
-    return (
-      <div
-        className={`bg-gray-50 p-4 rounded-lg border-2 transition-all duration-200 hover:border-gray-300 ${
-          hasChanged ? "border-amber-400" : "border-gray-200"
-        }`}
-      >
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}
-          {hasChanged && (
-            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-              Modificado
-            </span>
-          )}
-        </label>
-        <input
-          type="number"
-          step="0.01"
-          placeholder="0.00"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={loadingItemId === "digital_all"}
-          className={`w-full p-3 border-2 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-            hasChanged
-              ? "border-amber-400 bg-amber-50"
-              : "border-gray-300 bg-white"
-          }`}
-        />
-        <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Actual: ${currentPrice?.toFixed(2) || "0.00"} {description}
-        </p>
-      </div>
-    );
-  };
 
   return (
     <section className={`${colors.bg} p-4 sm:p-6 rounded-xl shadow-md`}>
@@ -137,11 +137,9 @@ function DigitalPrintingSection({
           {/* Botón de actualización masiva */}
           <button
             onClick={updateAllDigitalPrinting}
-            disabled={loadingItemId === "digital_all" || !hasChanges}
-            className={`${
-              colors.button
-            } min-h-[44px] text-white font-bold py-2 sm:py-3 px-3 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative text-sm sm:text-base ${
-              hasChanges ? "ring-2 ring-amber-400 ring-offset-2" : ""
+            disabled={loadingItemId === "digital_all" || !hasAnyChanges}
+            className={`${colors.button} min-h-[44px] text-white font-bold py-2 sm:py-3 px-3 sm:px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base relative ${
+              hasAnyChanges ? "ring-2 ring-amber-400 ring-offset-2" : ""
             }`}
           >
             {loadingItemId === "digital_all" ? (
@@ -182,7 +180,7 @@ function DigitalPrintingSection({
                   />
                 </svg>
                 Actualizar
-                {hasChanges && (
+                {hasAnyChanges && (
                   <span className="absolute -top-1 -right-1 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
@@ -200,6 +198,7 @@ function DigitalPrintingSection({
             onChange={setDigitalQuarterTiroInput}
             currentPrice={finishingPrices["digital_quarter_tiro"]}
             description="/unidad"
+            disabled={loadingItemId === "digital_all"}
           />
           <PriceField
             label="1/4 Pliego Digital (Tiro y Retiro)"
@@ -207,6 +206,7 @@ function DigitalPrintingSection({
             onChange={setDigitalQuarterTiroRetiroInput}
             currentPrice={finishingPrices["digital_quarter_tiro_retiro"]}
             description="/unidad"
+            disabled={loadingItemId === "digital_all"}
           />
         </div>
       </div>
