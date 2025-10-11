@@ -174,6 +174,17 @@ export const PLATE_SIZE_OPTIONS = [
   { value: "Pliego Completo", label: "Pliego Completo" },
 ];
 
+// Opciones de papel predefinidas (enum-like)
+// Cada perfil de precio define el precio de estos tipos fijos
+export const PAPER_TYPE_OPTIONS = [
+  { value: "bond_blanco", label: "Bond Blanco", defaultGramaje: "120g" },
+  { value: "bond_color", label: "Bond Color", defaultGramaje: "120g" },
+  { value: "couche_mate", label: "Couché Mate", defaultGramaje: "150g" },
+  { value: "couche_brillante", label: "Couché Brillante", defaultGramaje: "150g" },
+  { value: "opalina", label: "Opalina", defaultGramaje: "240g" },
+  { value: "cartulina_bristol", label: "Cartulina Bristol", defaultGramaje: "180g" },
+];
+
 export const MACHINE_TYPE_OPTIONS = [
   { value: "GTO", label: "GTO" },
   { value: "KORD", label: "KORD" },

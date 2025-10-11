@@ -24,7 +24,17 @@ import { useClients } from "../../context/ClientsContext";
 import { useStepperNavigation } from "./hooks/useStepperNavigation";
 import { useStepValidation } from "./hooks/useStepValidation";
 import { useToast } from "./hooks/useToast";
-import { MESSAGES } from "../../utils/constants";
+import { usePriceProfilesList } from "../PriceProfiles/hooks/usePriceProfilesList";
+import { MESSAGES, TROQUELADO_SEPARATION, PAPER_TYPE_OPTIONS } from "../../utils/constants";
+import {
+  getSheetDimensions,
+  calculateDigitalCost,
+  calculateOffsetCost,
+  calculateFinishingCosts,
+  calculateAdditionalPiecesYield,
+  calculateTotalWithProfit,
+} from "../../utils/calculationEngine";
+import { calculateBestFit } from "../../utils/calculations";
 
 /**
  * Componente principal de la calculadora de cotizaciones
@@ -37,6 +47,8 @@ function QuotationCalculator() {
 
   // Obtener cotización cargada desde el estado de navegación (si viene de SavedQuotations o Templates)
   const loadedQuotationFromState = location.state?.quotation || null;
+  const templateDataFromState = location.state?.templateData || null;
+  const navigationMode = location.state?.mode || 'normal';
   const preselectedClientId = location.state?.preselectedClientId || null;
   const [loadedQuotation, setLoadedQuotation] = useState(loadedQuotationFromState);
 
@@ -51,10 +63,20 @@ function QuotationCalculator() {
   // Hook: Cargar lista de clientes
   const { clients, loading: clientsLoading } = useClients();
 
+  // Hook: Cargar perfiles de precio
+  const { profiles: priceProfiles } = usePriceProfilesList();
+
   // Estado temporal para clientId (se sincroniza con useQuotation)
   const [tempClientId, setTempClientId] = useState(null);
 
+  // Estado para perfil de precio seleccionado (para templates)
+  const [selectedPriceProfileId, setSelectedPriceProfileId] = useState(null);
+
+  // Ref para controlar si ya se re-calcularon los items (evita re-cálculos infinitos)
+  const hasRecalculatedItems = React.useRef(false);
+
   // Hook: Cargar datos de precios dinámicos basados en el cliente seleccionado
+  // Si hay un selectedPriceProfileId (desde template), usarlo en lugar del perfil del cliente
   const {
     papers: paperTypes,
     plateSizes,
@@ -62,7 +84,7 @@ function QuotationCalculator() {
     finishingPrices,
     settings,
     loading: pricesLoading,
-  } = useDynamicPriceData(tempClientId);
+  } = useDynamicPriceData(tempClientId, selectedPriceProfileId);
 
   // Extraer valores de settings
   const profitPercentage = settings.profit || 0;
@@ -78,6 +100,7 @@ function QuotationCalculator() {
     clientId,
     setClientId: setQuotationClientId,
     items,
+    setItems, // Necesario para re-calcular items desde templates
     grandTotals,
     editingQuotationId,
     addOrUpdateItem,
@@ -86,6 +109,7 @@ function QuotationCalculator() {
     resetQuotation,
     saveQuotation,
     updateQuotation,
+    loadFromTemplate,
   } = useQuotation({
     db,
     appId,
@@ -182,6 +206,7 @@ function QuotationCalculator() {
     resetQuotation();
     resetItemForm();
     goToStep(1);
+    hasRecalculatedItems.current = false; // Resetear flag de re-cálculo
     navigate('/calculator'); // Navegar de vuelta al home
   }, [resetQuotation, resetItemForm, goToStep, navigate]);
 
@@ -194,9 +219,48 @@ function QuotationCalculator() {
       );
       return;
     }
-    // Navegar a la ruta de edición (stepper)
-    navigate('/calculator/edit');
-  }, [mainQuotationName, clientId, showToast, navigate]);
+
+    // Si viene de template, validar perfil de precio y cargar items
+    if (navigationMode === 'from-template' && templateDataFromState) {
+      if (!selectedPriceProfileId) {
+        showToast(
+          "Debes seleccionar un perfil de precio",
+          "error"
+        );
+        return;
+      }
+
+      // Cargar items de la plantilla con el nuevo cliente y perfil de precio
+      loadFromTemplate(
+        templateDataFromState,
+        clientId,
+        clientName,
+        selectedPriceProfileId,
+        mainQuotationName
+      );
+
+      // Navegar a la ruta de edición y después ir al paso 4
+      navigate('/calculator/edit');
+      // El useEffect detectará los items cargados y navegará al paso 4
+      setTimeout(() => {
+        goToStep(4);
+      }, 100);
+    } else {
+      // Flujo normal: navegar al stepper en paso 1
+      navigate('/calculator/edit');
+    }
+  }, [
+    mainQuotationName,
+    clientId,
+    clientName,
+    selectedPriceProfileId,
+    navigationMode,
+    templateDataFromState,
+    loadFromTemplate,
+    goToStep,
+    showToast,
+    navigate
+  ]);
 
   // Handler: Editar item existente (desde Paso 6)
   const handleEditItem = useCallback(
@@ -308,9 +372,16 @@ function QuotationCalculator() {
   // Detectar si se cargó una cotización desde el estado de navegación
   useEffect(() => {
     if (loadedQuotationFromState) {
-      navigate('/calculator/edit', { replace: true }); // Ya tiene datos cargados, ir a stepper
+      // Distinguir entre edición y template
+      if (location.state?.fromTemplate) {
+        // Ya no debería llegar aquí - TemplateSelector ahora navega a /config
+        console.warn('Template flow should go through /config first');
+      } else {
+        // Edición normal de cotización existente
+        navigate('/calculator/edit', { replace: true });
+      }
     }
-  }, [loadedQuotationFromState, navigate]);
+  }, [loadedQuotationFromState, location.state, navigate]);
 
   // Detectar si viene un cliente pre-seleccionado (desde creación de cliente nuevo)
   useEffect(() => {
@@ -318,6 +389,262 @@ function QuotationCalculator() {
       setClientId(preselectedClientId);
     }
   }, [preselectedClientId, location.pathname, setClientId]);
+
+  // Resetear flag de re-cálculo cuando cambia el perfil seleccionado (permite múltiples cambios)
+  useEffect(() => {
+    if (selectedPriceProfileId && location.pathname === '/calculator/config') {
+      hasRecalculatedItems.current = false;
+      console.log('🔄 Flag de re-cálculo reseteado por cambio de perfil');
+    }
+  }, [selectedPriceProfileId, location.pathname]);
+
+  // Re-calcular items cuando cambia el perfil de precio (importante para templates)
+  useEffect(() => {
+    // Solo re-calcular si:
+    // 1. Hay items cargados
+    // 2. Hay un selectedPriceProfileId
+    // 3. Los datos de precios ya están cargados
+    // 4. Estamos en modo template
+    // 5. NO se han re-calculado antes (evitar loops)
+    if (
+      items.length > 0 &&
+      selectedPriceProfileId &&
+      !pricesLoading &&
+      navigationMode === 'from-template' &&
+      !hasRecalculatedItems.current &&
+      paperTypes.length > 0 && // Asegurar que los precios estén cargados
+      plateSizes.length > 0 &&
+      machineTypes.length > 0 &&
+      Object.keys(finishingPrices).length > 0
+    ) {
+      console.log('🔄 Re-calculando items con nuevo perfil de precio:', selectedPriceProfileId);
+      console.log('📦 Materiales disponibles:', {
+        papers: paperTypes.length,
+        plates: plateSizes.length,
+        machines: machineTypes.length,
+        finishing: Object.keys(finishingPrices).length
+      });
+
+      let hasRemappedMaterials = false;
+
+      // Re-calcular cada item con los nuevos precios
+      const recalculatedItems = items.map((item, index) => {
+        const {
+          totalPieces,
+          pieceWidthCm,
+          pieceHeightCm,
+          printingAreaOption,
+          isDigitalDuplex,
+          isTroqueladoSelected,
+          sobrantePliegos,
+          numColorsTiro,
+          isTiroRetiro,
+          numColorsRetiro,
+          isWorkAndTurn,
+          additionalPieces = [],
+        } = item;
+
+        let selectedPaperTypeId = item.selectedPaperTypeId;
+        let selectedPlateSizeId = item.selectedPlateSizeId;
+        let selectedMachineTypeId = item.selectedMachineTypeId;
+
+        // **MAPEO INTELIGENTE POR NOMBRE DE MATERIAL**
+        // En lugar de solo verificar IDs, intentamos encontrar el material equivalente por nombre
+
+        // Mapear papel: buscar por nombre/tipo en el nuevo perfil
+        if (selectedPaperTypeId && paperTypes.length > 0) {
+          // Buscar el papel original para obtener su nombre/tipo
+          const originalPaper = items.flatMap(() => paperTypes).find(p => p.id === selectedPaperTypeId);
+          const paperExists = paperTypes.some(p => p.id === selectedPaperTypeId);
+
+          if (!paperExists) {
+            // El ID no existe - buscar equivalente por nombre
+            if (originalPaper && originalPaper.name) {
+              const equivalentPaper = paperTypes.find(p =>
+                p.name && p.name.toLowerCase().includes(originalPaper.name.toLowerCase().split(' ')[0])
+              );
+
+              if (equivalentPaper) {
+                selectedPaperTypeId = equivalentPaper.id;
+                console.log(`✓ Item ${index + 1}: Papel mapeado a "${equivalentPaper.name}"`);
+                hasRemappedMaterials = true;
+              } else {
+                // No se encontró equivalente - usar el primero disponible
+                selectedPaperTypeId = paperTypes[0].id;
+                console.warn(`⚠️ Item ${index + 1}: Papel "${originalPaper.name}" no encontrado, usando "${paperTypes[0].name}"`);
+                hasRemappedMaterials = true;
+              }
+            } else {
+              // No hay info del papel original - usar el primero
+              selectedPaperTypeId = paperTypes[0].id;
+              hasRemappedMaterials = true;
+            }
+          }
+        } else if (!selectedPaperTypeId && paperTypes.length > 0) {
+          // No había papel seleccionado - asignar el primero
+          selectedPaperTypeId = paperTypes[0].id;
+        }
+
+        // Mapear plancha: buscar por tamaño
+        if (selectedPlateSizeId && plateSizes.length > 0) {
+          const plateExists = plateSizes.some(p => p.id === selectedPlateSizeId);
+
+          if (!plateExists) {
+            const originalPlate = items.flatMap(() => plateSizes).find(p => p.id === selectedPlateSizeId);
+
+            if (originalPlate && originalPlate.size) {
+              const equivalentPlate = plateSizes.find(p =>
+                p.size && p.size.toLowerCase() === originalPlate.size.toLowerCase()
+              );
+
+              if (equivalentPlate) {
+                selectedPlateSizeId = equivalentPlate.id;
+                console.log(`✓ Item ${index + 1}: Plancha mapeada a "${equivalentPlate.size}"`);
+                hasRemappedMaterials = true;
+              } else {
+                selectedPlateSizeId = plateSizes[0].id;
+                console.warn(`⚠️ Item ${index + 1}: Plancha "${originalPlate.size}" no encontrada`);
+                hasRemappedMaterials = true;
+              }
+            } else {
+              selectedPlateSizeId = plateSizes[0].id;
+              hasRemappedMaterials = true;
+            }
+          }
+        } else if (!selectedPlateSizeId && plateSizes.length > 0) {
+          selectedPlateSizeId = plateSizes[0].id;
+        }
+
+        // Mapear máquina: buscar por tipo
+        if (selectedMachineTypeId && machineTypes.length > 0) {
+          const machineExists = machineTypes.some(m => m.id === selectedMachineTypeId);
+
+          if (!machineExists) {
+            const originalMachine = items.flatMap(() => machineTypes).find(m => m.id === selectedMachineTypeId);
+
+            if (originalMachine && originalMachine.type) {
+              const equivalentMachine = machineTypes.find(m =>
+                m.type && m.type.toLowerCase() === originalMachine.type.toLowerCase()
+              );
+
+              if (equivalentMachine) {
+                selectedMachineTypeId = equivalentMachine.id;
+                console.log(`✓ Item ${index + 1}: Máquina mapeada a "${equivalentMachine.type}"`);
+                hasRemappedMaterials = true;
+              } else {
+                selectedMachineTypeId = machineTypes[0].id;
+                console.warn(`⚠️ Item ${index + 1}: Máquina "${originalMachine.type}" no encontrada`);
+                hasRemappedMaterials = true;
+              }
+            } else {
+              selectedMachineTypeId = machineTypes[0].id;
+              hasRemappedMaterials = true;
+            }
+          }
+        } else if (!selectedMachineTypeId && machineTypes.length > 0) {
+          selectedMachineTypeId = machineTypes[0].id;
+        }
+
+        const pieces = parseFloat(totalPieces) || 0;
+        const pWidth = parseFloat(pieceWidthCm);
+        const pHeight = parseFloat(pieceHeightCm);
+        const hasCustomDimensions = pWidth > 0 && pHeight > 0;
+
+        if (!pieces || !printingAreaOption) {
+          return {
+            ...item,
+            selectedPaperTypeId,
+            selectedPlateSizeId,
+            selectedMachineTypeId,
+          }; // Mantener item con IDs actualizados
+        }
+
+        const sheetConfig = getSheetDimensions(printingAreaOption);
+        const separation = isTroqueladoSelected ? TROQUELADO_SEPARATION : 0;
+        const fit = hasCustomDimensions
+          ? calculateBestFit(pWidth, pHeight, sheetConfig.width, sheetConfig.height, separation)
+          : { count: 1 };
+
+        let costResult = {};
+
+        // Re-calcular según tipo (digital u offset)
+        if (sheetConfig.isDigital) {
+          costResult = calculateDigitalCost({
+            pieces,
+            fit,
+            isDigitalDuplex,
+            finishingPrices,
+          });
+        } else {
+          costResult = calculateOffsetCost({
+            pieces,
+            fit,
+            numColorsTiro,
+            numColorsRetiro,
+            isTiroRetiro,
+            isWorkAndTurn,
+            sobrantePliegos,
+            selectedPaperTypeId,
+            selectedPlateSizeId,
+            selectedMachineTypeId,
+            paperTypes,
+            plateSizes,
+            machineTypes,
+          });
+        }
+
+        // Re-calcular acabados
+        const finishingResult = calculateFinishingCosts({
+          ...item,
+          ...costResult,
+          finishingPrices,
+        });
+
+        // Re-calcular piezas adicionales con el ID actualizado
+        const additionalPiecesResult = calculateAdditionalPiecesYield({
+          additionalPieces,
+          fit,
+          selectedPaperTypeId,
+          paperTypes,
+        });
+
+        // Re-calcular total con ganancia
+        const totalResult = calculateTotalWithProfit({
+          ...costResult,
+          ...finishingResult,
+          ...additionalPiecesResult,
+          profitPercentage: settings.profit || 0,
+        });
+
+        // Retornar item actualizado con nuevos cálculos Y IDs validados
+        return {
+          ...item,
+          selectedPaperTypeId,
+          selectedPlateSizeId,
+          selectedMachineTypeId,
+          ...costResult,
+          ...finishingResult,
+          ...additionalPiecesResult,
+          ...totalResult,
+        };
+      });
+
+      // Actualizar los items con los nuevos cálculos
+      setItems(recalculatedItems);
+      hasRecalculatedItems.current = true; // Marcar como re-calculado
+
+      console.log('✅ Items re-calculados exitosamente');
+
+      // Mostrar advertencia si hubo materiales re-mapeados
+      if (hasRemappedMaterials) {
+        showToast(
+          'Se han actualizado los materiales con el nuevo perfil de precio. Por favor, revisa los items.',
+          'info'
+        );
+      }
+    }
+  }, [selectedPriceProfileId, pricesLoading, navigationMode, paperTypes, plateSizes, machineTypes, finishingPrices, settings.profit, items.length, showToast]);
+  // NOTA: No incluir 'items' ni 'setItems' en las dependencias para evitar loop infinito
 
   // Ref para el contenedor de pasos (para auto-scroll y focus)
   const stepContainerRef = React.useRef(null);
@@ -433,6 +760,11 @@ function QuotationCalculator() {
           clientId={clientId}
           setClientId={setClientId}
           setClientName={setClientName}
+          templateData={templateDataFromState}
+          mode={navigationMode}
+          priceProfiles={priceProfiles}
+          selectedPriceProfileId={selectedPriceProfileId}
+          setSelectedPriceProfileId={setSelectedPriceProfileId}
           onBeginQuotation={handleBeginQuotation}
           onNavigateToClients={() => navigate("/clients")}
         />

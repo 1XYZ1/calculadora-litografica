@@ -5,6 +5,7 @@ import {
   addDoc,
   updateDoc,
   Timestamp,
+  increment,
 } from "firebase/firestore";
 import { initialQuotationState, MESSAGES } from "../../../utils/constants";
 import { generateColorsDescription } from "../../../utils/calculationEngine";
@@ -32,6 +33,7 @@ export const useQuotation = ({
     initialQuotationState.grandTotals
   );
   const [editingQuotationId, setEditingQuotationId] = useState(null);
+  const [templateSource, setTemplateSource] = useState(null);
 
   // Cargar cotización existente si se proporciona
   useEffect(() => {
@@ -149,11 +151,37 @@ export const useQuotation = ({
         isTemplate: false,
         templateName: "",
         usageCount: 0,
-        duplicatedFrom: null,
-        createdVia: "manual",
+        duplicatedFrom: templateSource?.templateId || null,
+        createdVia: templateSource ? "template" : "manual",
+        // Template tracking extendido
+        templateMetadata: templateSource ? {
+          originalTemplateId: templateSource.templateId,
+          originalTemplateName: templateSource.templateName,
+          originalPriceProfileId: templateSource.originalPriceProfileId,
+          usedPriceProfileId: templateSource.selectedPriceProfileId,
+          priceProfileChanged: templateSource.originalPriceProfileId !== templateSource.selectedPriceProfileId,
+        } : null,
+        // Guardar el perfil de precio usado (importante para tracking)
+        priceProfileId: templateSource?.selectedPriceProfileId || null,
       };
 
       await addDoc(quotationsCollectionRef, quotationData);
+
+      // Si viene de template, incrementar contador
+      if (templateSource?.templateId) {
+        const templateRef = doc(
+          db,
+          `artifacts/${appId}/users/${userId}/quotations`,
+          templateSource.templateId
+        );
+        await updateDoc(templateRef, {
+          usageCount: increment(1),
+          lastUsedAt: Timestamp.now()
+        });
+      }
+
+      // Limpiar templateSource después de guardar
+      setTemplateSource(null);
 
       return {
         success: true,
@@ -173,6 +201,7 @@ export const useQuotation = ({
     clientName,
     clientId,
     grandTotals,
+    templateSource,
   ]);
 
   // Actualizar cotización existente
@@ -231,17 +260,31 @@ export const useQuotation = ({
   ]);
 
   // Cargar cotización desde plantilla
-  const loadFromTemplate = useCallback((templateData, newClientId, newClientName, newQuotationName = null) => {
+  const loadFromTemplate = useCallback((templateData, newClientId, newClientName, selectedPriceProfileId, newQuotationName = null) => {
     if (!templateData) return;
 
+    // Configurar info básica
     setClientId(newClientId);
     setClientName(newClientName);
     setMainQuotationName(
-      newQuotationName || `${templateData.templateName || templateData.name} (desde plantilla)`
+      newQuotationName || `${templateData.templateName || templateData.name} - ${new Date().toLocaleDateString()}`
     );
-    setEditingQuotationId(null); // Nueva cotización, no edición
-    // Los items se cargarán desde templateData.items
-  }, [setClientId, setClientName, setMainQuotationName, setEditingQuotationId]);
+
+    // CRITICAL: Cargar items de la plantilla
+    // NOTA: Los items se re-calcularán automáticamente en el stepper con el nuevo perfil de precio
+    setItems(templateData.items || []);
+
+    // Asegurar que NO está en modo edición
+    setEditingQuotationId(null);
+
+    // Guardar referencia a plantilla original para tracking
+    setTemplateSource({
+      templateId: templateData.id,
+      templateName: templateData.templateName || templateData.name,
+      originalPriceProfileId: templateData.priceProfileId,      // Perfil original del template
+      selectedPriceProfileId: selectedPriceProfileId,            // Perfil seleccionado por usuario
+    });
+  }, []);
 
   return {
     mainQuotationName,
@@ -251,6 +294,7 @@ export const useQuotation = ({
     clientId,
     setClientId,
     items,
+    setItems, // Exportar setItems para re-cálculos
     grandTotals,
     editingQuotationId,
     addOrUpdateItem,

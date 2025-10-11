@@ -9,6 +9,7 @@ import ClientFormModal from "../../../components/ClientFormModal";
 /**
  * Pantalla inicial para configurar el presupuesto antes de entrar al stepper
  * Permite seleccionar cliente y nombre del presupuesto
+ * Soporte para modo template con preview y selección de perfil de precio
  */
 export default function QuotationInitialScreen({
   mainQuotationName,
@@ -16,6 +17,11 @@ export default function QuotationInitialScreen({
   clientId,
   setClientId,
   setClientName,
+  templateData,
+  mode = 'normal',
+  priceProfiles = [],
+  selectedPriceProfileId,
+  setSelectedPriceProfileId,
   onBeginQuotation,
   onNavigateToClients,
 }) {
@@ -23,11 +29,40 @@ export default function QuotationInitialScreen({
   const { clients, loading, refreshClients } = useClients();
   const { userId } = useFirebase();
   const { createClient } = useClientsCRUD();
-  const { profiles: priceProfiles } = usePriceProfilesList();
+  const { profiles: priceProfilesFromHook } = usePriceProfilesList();
+
+  // Usar priceProfiles de props si está disponible, sino del hook local
+  const availableProfiles = priceProfiles.length > 0 ? priceProfiles : priceProfilesFromHook;
 
   const [selectedClient, setSelectedClient] = useState(null);
   const [showClientModal, setShowClientModal] = useState(false);
   const [creatingClient, setCreatingClient] = useState(false);
+
+  // Pre-seleccionar cliente y perfil cuando viene de template
+  useEffect(() => {
+    if (mode === 'from-template' && templateData) {
+      // Pre-seleccionar cliente original del template
+      if (templateData.clientId && clients.length > 0) {
+        const client = clients.find((c) => c.id === templateData.clientId);
+        if (client && !clientId) {
+          setClientId(templateData.clientId);
+          setClientName(templateData.clientName);
+          setSelectedClient(client);
+        }
+      }
+
+      // Pre-seleccionar perfil de precio original del template
+      if (templateData.priceProfileId && !selectedPriceProfileId && setSelectedPriceProfileId) {
+        setSelectedPriceProfileId(templateData.priceProfileId);
+      }
+
+      // Pre-rellenar nombre del presupuesto
+      if (!mainQuotationName && setMainQuotationName) {
+        const templateName = templateData.templateName || templateData.name;
+        setMainQuotationName(`${templateName} - ${new Date().toLocaleDateString()}`);
+      }
+    }
+  }, [mode, templateData, clients, clientId, selectedPriceProfileId, mainQuotationName, setClientId, setClientName, setSelectedPriceProfileId, setMainQuotationName]);
 
   // Sincronizar cliente seleccionado cuando cambia el clientId desde fuera
   useEffect(() => {
@@ -101,9 +136,16 @@ export default function QuotationInitialScreen({
     }
   };
 
+  // Helper: Obtener nombre de perfil de precio
+  const getProfileName = (profileId) => {
+    const profile = availableProfiles.find(p => p.id === profileId);
+    return profile?.name || 'Desconocido';
+  };
+
   // Verificar si se puede comenzar la cotización
-  const canBeginQuotation =
-    mainQuotationName.trim() !== "" && clientId !== null;
+  const canBeginQuotation = mode === 'from-template'
+    ? mainQuotationName.trim() !== "" && clientId !== null && selectedPriceProfileId !== null
+    : mainQuotationName.trim() !== "" && clientId !== null;
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center p-3 sm:p-4">
@@ -139,12 +181,37 @@ export default function QuotationInitialScreen({
             </svg>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-            Nueva Cotización
+            {mode === 'from-template' ? 'Nueva Cotización desde Plantilla' : 'Nueva Cotización'}
           </h1>
           <p className="text-sm sm:text-base text-gray-500">
             Completa la información básica para comenzar
           </p>
         </div>
+
+        {/* Template Preview Section */}
+        {mode === 'from-template' && templateData && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <span className="text-2xl">📋</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-900 mb-1">
+                  Creando desde plantilla: "{templateData.templateName || templateData.name}"
+                </h3>
+                <div className="space-y-1 text-sm text-gray-700">
+                  <p>• <strong>{templateData.items?.length || 0}</strong> ítems pre-configurados</p>
+                  <p>• Cliente original: <strong>{templateData.clientName}</strong></p>
+                  <p>• Perfil de precio original: <strong>{getProfileName(templateData.priceProfileId)}</strong></p>
+                  <p>• Usada <strong>{templateData.usageCount || 0}</strong> {templateData.usageCount === 1 ? 'vez' : 'veces'}</p>
+                </div>
+                <div className="mt-3 p-2 bg-white rounded border border-amber-200 text-xs text-gray-600">
+                  💡 Los ítems se cargarán con la misma configuración. Podrás modificarlos antes de guardar.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Formulario */}
         <div className="space-y-4 sm:space-y-6">
@@ -288,6 +355,38 @@ export default function QuotationInitialScreen({
               </div>
             </div>
           )}
+
+          {/* Selector de Perfil de Precio - Solo en modo template */}
+          {mode === 'from-template' && setSelectedPriceProfileId && (
+            <div>
+              <label
+                htmlFor="profile-select"
+                className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2"
+              >
+                Perfil de Precio
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <select
+                id="profile-select"
+                value={selectedPriceProfileId || ''}
+                onChange={(e) => setSelectedPriceProfileId(e.target.value)}
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              >
+                <option value="">-- Seleccionar perfil --</option>
+                {availableProfiles.map(profile => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.name} {profile.id === templateData?.priceProfileId ? '(Original)' : ''}
+                  </option>
+                ))}
+              </select>
+
+              {selectedPriceProfileId && selectedPriceProfileId !== templateData?.priceProfileId && (
+                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-300 rounded text-xs text-yellow-800">
+                  ⚠️ Has seleccionado un perfil diferente al original. Los ítems se re-calcularán con los nuevos precios.
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Botón comenzar cotización */}
@@ -322,7 +421,7 @@ export default function QuotationInitialScreen({
         onClose={() => setShowClientModal(false)}
         onSubmit={handleCreateClient}
         mode="create"
-        priceProfiles={priceProfiles}
+        priceProfiles={availableProfiles}
       />
     </div>
   );

@@ -5,7 +5,8 @@
  * Ejecutar desde la consola del navegador o como función standalone
  */
 
-import { collection, getDocs, updateDoc, doc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, doc, writeBatch, setDoc, deleteDoc } from 'firebase/firestore';
+import { PAPER_TYPE_OPTIONS } from './constants';
 
 /**
  * Migra la colección de quotations agregando nuevos campos
@@ -307,3 +308,258 @@ export const checkMigrationStatus = async (db, appId, userId) => {
     return { error: error.message };
   }
 };
+
+/**
+ * Migrar papeles de nombres dinámicos a tipos fijos (enum)
+ * Convierte el sistema actual de papeles a opciones predefinidas
+ */
+export const migratePapersToFixedTypes = async (db, appId, userId) => {
+  try {
+    console.log('🔄 Iniciando migración de papeles a tipos fijos...');
+
+    const profilesRef = collection(
+      db,
+      `artifacts/${appId}/users/${userId}/priceProfiles`
+    );
+    const profilesSnapshot = await getDocs(profilesRef);
+
+    let totalPapersMigrated = 0;
+    let totalPapersDeleted = 0;
+    let profilesProcessed = 0;
+    const migrationLog = [];
+
+    for (const profileDoc of profilesSnapshot.docs) {
+      const profileId = profileDoc.id;
+      const papersRef = collection(
+        db,
+        `artifacts/${appId}/users/${userId}/priceProfiles/${profileId}/papers`
+      );
+
+      const papersSnapshot = await getDocs(papersRef);
+      const papersMapped = new Map(); // tipo → {price, oldIds[]}
+
+      console.log(`\n📁 Perfil: ${profileId}`);
+      console.log(`   Papeles encontrados: ${papersSnapshot.size}`);
+
+      // Paso 1: Mapear papeles existentes a tipos fijos
+      papersSnapshot.forEach((paperDoc) => {
+        const paperData = paperDoc.data();
+        const paperName = (paperData.name || '').toLowerCase().trim();
+        const paperId = paperDoc.id;
+
+        // Intentar mapear a un tipo fijo
+        let mappedType = null;
+
+        if (paperName.includes('bond') && (paperName.includes('blanco') || paperName.includes('white'))) {
+          mappedType = 'bond_blanco';
+        } else if (paperName.includes('bond') && (paperName.includes('color') || paperName.includes('colores'))) {
+          mappedType = 'bond_color';
+        } else if (paperName.includes('couch') && paperName.includes('mate')) {
+          mappedType = 'couche_mate';
+        } else if (paperName.includes('couch') && (paperName.includes('brillante') || paperName.includes('brill'))) {
+          mappedType = 'couche_brillante';
+        } else if (paperName.includes('opalina')) {
+          mappedType = 'opalina';
+        } else if (paperName.includes('bristol') || paperName.includes('cartulina')) {
+          mappedType = 'cartulina_bristol';
+        } else {
+          // Si no se puede mapear, usar bond_blanco por defecto
+          mappedType = 'bond_blanco';
+          console.warn(`   ⚠️ "${paperName}" no mapeado → bond_blanco (default)`);
+        }
+
+        // Agregar a mapping
+        if (!papersMapped.has(mappedType)) {
+          papersMapped.set(mappedType, {
+            price: paperData.pricePerSheet || 0,
+            oldIds: [],
+            oldNames: []
+          });
+        }
+        papersMapped.get(mappedType).oldIds.push(paperId);
+        papersMapped.get(mappedType).oldNames.push(paperData.name);
+      });
+
+      // Paso 2: Crear documentos con IDs fijos y eliminar antiguos
+      for (const [paperType, data] of papersMapped.entries()) {
+        const paperOption = PAPER_TYPE_OPTIONS.find(p => p.value === paperType);
+
+        if (!paperOption) {
+          console.error(`   ❌ Tipo ${paperType} no existe en PAPER_TYPE_OPTIONS`);
+          continue;
+        }
+
+        // Crear nuevo documento con ID fijo
+        const newDocRef = doc(papersRef, paperType);
+        await setDoc(newDocRef, {
+          type: paperType,
+          label: paperOption.label,
+          defaultGramaje: paperOption.defaultGramaje,
+          pricePerSheet: data.price,
+          migratedFrom: data.oldNames, // Tracking
+          migratedAt: new Date().toISOString(),
+        });
+
+        console.log(`   ✓ ${paperOption.label}: $${data.price.toFixed(2)}/pliego`);
+        totalPapersMigrated++;
+
+        // Eliminar documentos antiguos (solo si no es el mismo ID)
+        for (const oldId of data.oldIds) {
+          if (oldId !== paperType) {
+            await deleteDoc(doc(papersRef, oldId));
+            totalPapersDeleted++;
+          }
+        }
+      }
+
+      migrationLog.push({
+        profileId,
+        papersMigrated: papersMapped.size,
+        papersDeleted: papersSnapshot.size - papersMapped.size,
+      });
+
+      profilesProcessed++;
+    }
+
+    console.log('\n✅ Migración de papeles completada');
+    console.log(`   Perfiles procesados: ${profilesProcessed}`);
+    console.log(`   Papeles migrados: ${totalPapersMigrated}`);
+    console.log(`   Documentos antiguos eliminados: ${totalPapersDeleted}`);
+
+    return {
+      success: true,
+      profilesProcessed,
+      papersMigrated: totalPapersMigrated,
+      papersDeleted: totalPapersDeleted,
+      migrationLog,
+    };
+  } catch (error) {
+    console.error('❌ Error en migración de papeles:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Actualizar items de quotations con nuevos IDs de papel
+ * Mapea los IDs antiguos a los tipos fijos
+ */
+export const updateQuotationPaperIds = async (db, appId, userId) => {
+  try {
+    console.log('🔄 Actualizando IDs de papel en quotations...');
+
+    const quotationsRef = collection(
+      db,
+      `artifacts/${appId}/users/${userId}/quotations`
+    );
+    const quotationsSnapshot = await getDocs(quotationsRef);
+
+    let quotationsUpdated = 0;
+    let itemsUpdated = 0;
+
+    // Primero, necesitamos construir un mapeo de oldId → newType
+    // Para esto, leemos todos los papeles migrados de todos los perfiles
+    const paperIdMapping = await buildPaperIdMapping(db, appId, userId);
+
+    console.log(`   Mapeo de papeles construido: ${paperIdMapping.size} entradas`);
+
+    const batch = writeBatch(db);
+    let batchCount = 0;
+
+    for (const quotDoc of quotationsSnapshot.docs) {
+      const quotData = quotDoc.data();
+      const items = quotData.items || [];
+      let hasChanges = false;
+
+      const updatedItems = items.map(item => {
+        if (!item.selectedPaperTypeId) return item;
+
+        const oldId = item.selectedPaperTypeId;
+        const newType = paperIdMapping.get(oldId);
+
+        if (newType && newType !== oldId) {
+          itemsUpdated++;
+          hasChanges = true;
+          return {
+            ...item,
+            selectedPaperTypeId: newType,
+          };
+        }
+
+        return item;
+      });
+
+      if (hasChanges) {
+        const quotRef = doc(quotationsRef, quotDoc.id);
+        batch.update(quotRef, { items: updatedItems });
+        quotationsUpdated++;
+        batchCount++;
+
+        // Firestore batch limit is 500
+        if (batchCount >= 500) {
+          await batch.commit();
+          batchCount = 0;
+        }
+      }
+    }
+
+    if (batchCount > 0) {
+      await batch.commit();
+    }
+
+    console.log('✅ IDs de papel actualizados en quotations');
+    console.log(`   Quotations actualizadas: ${quotationsUpdated}`);
+    console.log(`   Items actualizados: ${itemsUpdated}`);
+
+    return {
+      success: true,
+      quotationsUpdated,
+      itemsUpdated,
+    };
+  } catch (error) {
+    console.error('❌ Error actualizando quotations:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Helper: Construir mapeo de IDs antiguos a tipos nuevos
+ */
+async function buildPaperIdMapping(db, appId, userId) {
+  const mapping = new Map();
+
+  const profilesRef = collection(
+    db,
+    `artifacts/${appId}/users/${userId}/priceProfiles`
+  );
+  const profilesSnapshot = await getDocs(profilesRef);
+
+  for (const profileDoc of profilesSnapshot.docs) {
+    const profileId = profileDoc.id;
+    const papersRef = collection(
+      db,
+      `artifacts/${appId}/users/${userId}/priceProfiles/${profileId}/papers`
+    );
+
+    const papersSnapshot = await getDocs(papersRef);
+
+    papersSnapshot.forEach((paperDoc) => {
+      const paperData = paperDoc.data();
+      const newType = paperDoc.id; // El ID del documento ES el tipo
+      const oldNames = paperData.migratedFrom || [];
+
+      // Si tiene migratedFrom, mapear los IDs antiguos
+      if (oldNames.length > 0 && paperData.type) {
+        // Mapear el tipo actual al tipo nuevo
+        mapping.set(newType, newType);
+      }
+    });
+  }
+
+  return mapping;
+}

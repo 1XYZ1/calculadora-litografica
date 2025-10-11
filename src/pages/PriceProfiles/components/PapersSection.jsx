@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { SECTION_COLORS } from "../../../utils/constants";
+import { SECTION_COLORS, PAPER_TYPE_OPTIONS } from "../../../utils/constants";
 
 /**
  * Componente individual para campo de precio de papel
@@ -22,7 +22,7 @@ const PriceField = React.memo(({
     <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200 transition-all duration-200 hover:border-gray-300">
       <div className="flex items-center justify-between mb-2">
         <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-          {paper.name}
+          {paper.label || paper.name}
           {hasChanged && (
             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
               Modificado
@@ -81,11 +81,12 @@ PriceField.displayName = 'PriceField';
  * - Actualización masiva con un solo botón
  * - Indicadores visuales de cambios pendientes
  * - Validación en tiempo real
+ * - **Sistema de opciones fijas (enum-like) como las planchas**
  */
 function PapersSection({
   papers,
-  newPaperName,
-  setNewPaperName,
+  newPaperType, // Cambiado de newPaperName
+  setNewPaperType, // Cambiado de setNewPaperName
   newPaperPrice,
   setNewPaperPrice,
   paperPriceInputs,
@@ -96,6 +97,14 @@ function PapersSection({
   loadingAll,
 }) {
   const colors = SECTION_COLORS.papers;
+
+  // Filtrar opciones de papel que ya están agregadas (igual que PlatesSection)
+  const availablePaperOptions = useMemo(() => {
+    const existingTypes = papers.map((paper) => paper.id); // El ID es el tipo
+    return PAPER_TYPE_OPTIONS.filter(
+      (option) => !existingTypes.includes(option.value)
+    );
+  }, [papers]);
 
   // Detectar si hay cambios pendientes en algún papel (igual que BcvRateSection)
   const hasAnyChanges = useMemo(() => {
@@ -139,29 +148,44 @@ function PapersSection({
             Añadir Nuevo Tipo de Papel
           </span>
         </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr,1.5fr,auto] gap-3 sm:gap-4">
-          <input
-            type="text"
-            placeholder="Nombre del Papel (ej. GLASE 115GR)"
-            value={newPaperName}
-            onChange={(e) => setNewPaperName(e.target.value)}
-            className="p-2.5 sm:p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
-          />
-          <input
-            type="number"
-            step="0.01"
-            placeholder="Precio (ej. 2.50)"
-            value={newPaperPrice}
-            onChange={(e) => setNewPaperPrice(e.target.value)}
-            className="p-2.5 sm:p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
-          />
-          <button
-            onClick={addPaper}
-            className="min-h-[44px] bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg transition duration-300 shadow-md hover:shadow-lg whitespace-nowrap text-sm sm:text-base"
-          >
-            Añadir Papel
-          </button>
-        </div>
+
+        {availablePaperOptions.length === 0 ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+            <p className="text-blue-800 text-sm">
+              ✓ Todos los tipos de papel disponibles ya han sido agregados
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr,1.5fr,auto] gap-3 sm:gap-4">
+            <select
+              value={newPaperType}
+              onChange={(e) => setNewPaperType(e.target.value)}
+              className="p-2.5 sm:p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+            >
+              <option value="">-- Seleccionar tipo de papel --</option>
+              {availablePaperOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label} ({option.defaultGramaje})
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              step="0.01"
+              placeholder="Precio (ej. 2.50)"
+              value={newPaperPrice}
+              onChange={(e) => setNewPaperPrice(e.target.value)}
+              className="p-2.5 sm:p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+            />
+            <button
+              onClick={addPaper}
+              disabled={!newPaperType}
+              className="min-h-[44px] bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg transition duration-300 shadow-md hover:shadow-lg whitespace-nowrap text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Añadir Papel
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Lista de papeles existentes */}

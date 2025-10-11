@@ -9,13 +9,17 @@ import { useClientProfile } from "../../../hooks/useClientProfile";
  * Si no hay cliente, retorna datos vacíos
  *
  * @param {string} clientId - ID del cliente seleccionado
+ * @param {string} overridePriceProfileId - (Opcional) ID del perfil de precio a usar, sobreescribe el del cliente
  */
-export function useDynamicPriceData(clientId) {
+export function useDynamicPriceData(clientId, overridePriceProfileId = null) {
   const { db, appId, userId } = useFirebase();
 
   // Obtener el profileId del cliente
-  const { priceProfileId, loading: profileLoading } =
+  const { priceProfileId: clientPriceProfileId, loading: profileLoading } =
     useClientProfile(clientId);
+
+  // Usar el perfil override si está disponible, sino usar el del cliente
+  const priceProfileId = overridePriceProfileId || clientPriceProfileId;
 
   // Estados para datos de Firestore
   const [papers, setPapers] = useState([]);

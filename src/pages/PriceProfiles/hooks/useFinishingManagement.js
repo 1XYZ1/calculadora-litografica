@@ -48,71 +48,103 @@ export function useFinishingManagement(
   // Estados de loading granulares por tipo de operación
   const [loadingItemId, setLoadingItemId] = useState(null);
 
-  // Ref para rastrear si ya se inicializaron los valores
-  const initializedRef = useRef(false);
+  // Ref para rastrear el último perfil cargado y los últimos valores
   const lastProfileIdRef = useRef(null);
+  const lastFinishingPricesRef = useRef({});
 
-  // Sincronizar inputs con precios de Firestore solo cuando cambia el perfil
+  // Sincronizar inputs con precios de Firestore cuando cambia el perfil
   useEffect(() => {
-    // Si cambia el perfil, marcar como no inicializado
+    // Si cambia el perfil o no hay perfil, resetear todos los inputs
     if (lastProfileIdRef.current !== priceProfileId) {
-      initializedRef.current = false;
       lastProfileIdRef.current = priceProfileId;
+      lastFinishingPricesRef.current = {};
+
+      // Si no hay perfil seleccionado, limpiar todos los inputs
+      if (!priceProfileId) {
+        setUvPricesInput({
+          half_sheet: "",
+          quarter_sheet: "",
+          tabloide: "",
+          oficio: "",
+          carta: "",
+          quarter_sheet_digital: "",
+        });
+        setRematePriceInput("");
+        setLaminadoMatePriceInput("");
+        setLaminadoBrillantePriceInput("");
+        setSignadoPriceInput("");
+        setTroqueladoPriceInput("");
+        setDigitalQuarterTiroInput("");
+        setDigitalQuarterTiroRetiroInput("");
+        return;
+      }
     }
 
-    // Solo inicializar una vez por perfil y cuando tengamos datos
-    if (!initializedRef.current && finishingPrices && Object.keys(finishingPrices).length > 0) {
-      // Actualizar inputs de UV
-      setUvPricesInput({
-        half_sheet: finishingPrices["uv_half_sheet"]?.toString() || "",
-        quarter_sheet: finishingPrices["uv_quarter_sheet"]?.toString() || "",
-        tabloide: finishingPrices["uv_tabloide"]?.toString() || "",
-        oficio: finishingPrices["uv_oficio"]?.toString() || "",
-        carta: finishingPrices["uv_carta"]?.toString() || "",
-        quarter_sheet_digital:
-          finishingPrices["uv_quarter_sheet_digital"]?.toString() || "",
-      });
+    // Solo actualizar inputs si los valores realmente cambiaron
+    if (priceProfileId && finishingPrices && Object.keys(finishingPrices).length > 0) {
+      const lastPrices = lastFinishingPricesRef.current;
 
-      // Actualizar otros acabados
-      setRematePriceInput(
-        finishingPrices["remate"] !== undefined
-          ? finishingPrices["remate"].toString()
-          : ""
-      );
-      setLaminadoMatePriceInput(
-        finishingPrices["laminado_mate"] !== undefined
-          ? finishingPrices["laminado_mate"].toString()
-          : ""
-      );
-      setLaminadoBrillantePriceInput(
-        finishingPrices["laminado_brillante"] !== undefined
-          ? finishingPrices["laminado_brillante"].toString()
-          : ""
-      );
-      setSignadoPriceInput(
-        finishingPrices["signado"] !== undefined
-          ? finishingPrices["signado"].toString()
-          : ""
-      );
-      setTroqueladoPriceInput(
-        finishingPrices["troquelado"] !== undefined
-          ? finishingPrices["troquelado"].toString()
-          : ""
-      );
+      // Actualizar inputs de UV solo si cambiaron
+      const uvKeys = ["uv_half_sheet", "uv_quarter_sheet", "uv_tabloide", "uv_oficio", "uv_carta", "uv_quarter_sheet_digital"];
+      const uvChanged = uvKeys.some(key => finishingPrices[key] !== lastPrices[key]);
 
-      // Actualizar inputs de impresión digital
-      setDigitalQuarterTiroInput(
-        finishingPrices["digital_quarter_tiro"] !== undefined
-          ? finishingPrices["digital_quarter_tiro"].toString()
-          : ""
-      );
-      setDigitalQuarterTiroRetiroInput(
-        finishingPrices["digital_quarter_tiro_retiro"] !== undefined
-          ? finishingPrices["digital_quarter_tiro_retiro"].toString()
-          : ""
-      );
+      if (uvChanged) {
+        setUvPricesInput({
+          half_sheet: finishingPrices["uv_half_sheet"]?.toString() || "",
+          quarter_sheet: finishingPrices["uv_quarter_sheet"]?.toString() || "",
+          tabloide: finishingPrices["uv_tabloide"]?.toString() || "",
+          oficio: finishingPrices["uv_oficio"]?.toString() || "",
+          carta: finishingPrices["uv_carta"]?.toString() || "",
+          quarter_sheet_digital: finishingPrices["uv_quarter_sheet_digital"]?.toString() || "",
+        });
+      }
 
-      initializedRef.current = true;
+      // Actualizar otros acabados solo si cambiaron
+      if (finishingPrices["remate"] !== lastPrices["remate"]) {
+        setRematePriceInput(
+          finishingPrices["remate"] !== undefined ? finishingPrices["remate"].toString() : ""
+        );
+      }
+
+      if (finishingPrices["laminado_mate"] !== lastPrices["laminado_mate"]) {
+        setLaminadoMatePriceInput(
+          finishingPrices["laminado_mate"] !== undefined ? finishingPrices["laminado_mate"].toString() : ""
+        );
+      }
+
+      if (finishingPrices["laminado_brillante"] !== lastPrices["laminado_brillante"]) {
+        setLaminadoBrillantePriceInput(
+          finishingPrices["laminado_brillante"] !== undefined ? finishingPrices["laminado_brillante"].toString() : ""
+        );
+      }
+
+      if (finishingPrices["signado"] !== lastPrices["signado"]) {
+        setSignadoPriceInput(
+          finishingPrices["signado"] !== undefined ? finishingPrices["signado"].toString() : ""
+        );
+      }
+
+      if (finishingPrices["troquelado"] !== lastPrices["troquelado"]) {
+        setTroqueladoPriceInput(
+          finishingPrices["troquelado"] !== undefined ? finishingPrices["troquelado"].toString() : ""
+        );
+      }
+
+      // Actualizar inputs de impresión digital solo si cambiaron
+      if (finishingPrices["digital_quarter_tiro"] !== lastPrices["digital_quarter_tiro"]) {
+        setDigitalQuarterTiroInput(
+          finishingPrices["digital_quarter_tiro"] !== undefined ? finishingPrices["digital_quarter_tiro"].toString() : ""
+        );
+      }
+
+      if (finishingPrices["digital_quarter_tiro_retiro"] !== lastPrices["digital_quarter_tiro_retiro"]) {
+        setDigitalQuarterTiroRetiroInput(
+          finishingPrices["digital_quarter_tiro_retiro"] !== undefined ? finishingPrices["digital_quarter_tiro_retiro"].toString() : ""
+        );
+      }
+
+      // Guardar referencia de los precios actuales
+      lastFinishingPricesRef.current = { ...finishingPrices };
     }
   }, [priceProfileId, finishingPrices]);
 

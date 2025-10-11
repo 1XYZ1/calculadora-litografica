@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { doc, setDoc } from "firebase/firestore";
 import { useFirebase } from "../../../context/FirebaseContext";
 import { validatePercentage, validateBcvRate } from "../utils/priceValidation";
@@ -30,13 +30,58 @@ export function useSettingsManagement(settings, notification, priceProfileId) {
   const [loadingBcv, setLoadingBcv] = useState(false);
   const [loadingIva, setLoadingIva] = useState(false);
 
-  // Limpiar inputs cuando cambia el perfil
-  // Los inputs siempre inician vacíos, mostrando solo el valor actual en el badge
+  // Ref para rastrear el último perfil cargado y los últimos valores de settings
+  const lastProfileIdRef = useRef(null);
+  const lastSettingsRef = useRef({ profit: undefined, bcv: undefined, iva: undefined });
+
+  // Sincronizar inputs con datos de settings cuando cambia el perfil o los valores reales
   useEffect(() => {
-    setProfitPercentageInput("");
-    setBcvRateInput("");
-    setIvaPercentageInput("");
-  }, [priceProfileId]); // Solo cuando cambia el perfil
+    // Si cambia el perfil, resetear inputs
+    if (lastProfileIdRef.current !== priceProfileId) {
+      lastProfileIdRef.current = priceProfileId;
+
+      // Si no hay perfil seleccionado, limpiar todos los inputs
+      if (!priceProfileId) {
+        setProfitPercentageInput("");
+        setBcvRateInput("");
+        setIvaPercentageInput("");
+        lastSettingsRef.current = { profit: undefined, bcv: undefined, iva: undefined };
+        return;
+      }
+    }
+
+    // Solo actualizar inputs si los valores realmente cambiaron
+    if (priceProfileId && settings) {
+      const { profit, bcv, iva } = settings;
+      const lastSettings = lastSettingsRef.current;
+
+      // Actualizar profit solo si cambió
+      if (profit !== lastSettings.profit) {
+        setProfitPercentageInput(
+          profit !== undefined && profit !== 0
+            ? (profit * 100).toString()
+            : ""
+        );
+        lastSettings.profit = profit;
+      }
+
+      // Actualizar bcv solo si cambió
+      if (bcv !== lastSettings.bcv) {
+        setBcvRateInput(
+          bcv !== undefined && bcv !== 0 ? bcv.toString() : ""
+        );
+        lastSettings.bcv = bcv;
+      }
+
+      // Actualizar iva solo si cambió
+      if (iva !== lastSettings.iva) {
+        setIvaPercentageInput(
+          iva !== undefined && iva !== 0 ? (iva * 100).toString() : ""
+        );
+        lastSettings.iva = iva;
+      }
+    }
+  }, [priceProfileId, settings]);
 
   // Actualizar porcentaje de ganancia
   const updateProfitPercentage = useCallback(async () => {

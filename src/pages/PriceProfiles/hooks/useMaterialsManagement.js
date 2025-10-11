@@ -47,10 +47,10 @@ export function useMaterialsManagement(
   const [machinePriceInputs, setMachinePriceInputs] = useState({});
   const [loadingMachinesAll, setLoadingMachinesAll] = useState("");
 
-  // Refs para rastrear inicializaciones
-  const platesInitializedRef = useRef(false);
-  const machinesInitializedRef = useRef(false);
+  // Ref para rastrear el último perfil cargado y los últimos valores
   const lastProfileIdRef = useRef(null);
+  const lastPlatesRef = useRef([]);
+  const lastMachinesRef = useRef([]);
 
   // Reiniciar formularios de nueva plancha y máquina cuando cambia el perfil
   useEffect(() => {
@@ -62,41 +62,84 @@ export function useMaterialsManagement(
 
   // Sincronizar inputs de planchas cuando cambia el perfil
   useEffect(() => {
-    // Si cambia el perfil, marcar como no inicializado
+    // Si cambia el perfil, resetear inputs
     if (lastProfileIdRef.current !== priceProfileId) {
-      platesInitializedRef.current = false;
       lastProfileIdRef.current = priceProfileId;
       setPlatePriceInputs({});
+      lastPlatesRef.current = [];
+
+      // Si no hay perfil, no continuar
+      if (!priceProfileId) {
+        return;
+      }
     }
 
-    // Solo inicializar una vez por perfil y cuando tengamos datos
-    if (!platesInitializedRef.current && plateSizes.length > 0) {
-      const initialInputs = {};
-      plateSizes.forEach((plate) => {
-        initialInputs[plate.id] =
-          plate.price !== undefined ? plate.price.toString() : "";
-      });
-      setPlatePriceInputs(initialInputs);
-      platesInitializedRef.current = true;
+    // Solo actualizar inputs si los valores realmente cambiaron
+    if (priceProfileId && plateSizes.length > 0) {
+      const lastPlates = lastPlatesRef.current;
+      let hasChanges = false;
+
+      // Verificar si hay cambios reales
+      if (plateSizes.length !== lastPlates.length) {
+        hasChanges = true;
+      } else {
+        hasChanges = plateSizes.some(plate => {
+          const lastPlate = lastPlates.find(p => p.id === plate.id);
+          return !lastPlate || lastPlate.price !== plate.price;
+        });
+      }
+
+      // Solo actualizar si hay cambios
+      if (hasChanges) {
+        const initialInputs = {};
+        plateSizes.forEach((plate) => {
+          initialInputs[plate.id] =
+            plate.price !== undefined ? plate.price.toString() : "";
+        });
+        setPlatePriceInputs(initialInputs);
+        lastPlatesRef.current = plateSizes.map(p => ({ ...p }));
+      }
     }
   }, [priceProfileId, plateSizes]);
 
   // Sincronizar inputs de máquinas cuando cambia el perfil
   useEffect(() => {
-    // Si cambia el perfil, marcar como no inicializado
+    // Si cambia el perfil, resetear inputs de máquinas también
     if (lastProfileIdRef.current !== priceProfileId) {
-      machinesInitializedRef.current = false;
+      setMachinePriceInputs({});
+      lastMachinesRef.current = [];
+
+      // Si no hay perfil, no continuar
+      if (!priceProfileId) {
+        return;
+      }
     }
 
-    // Solo inicializar una vez por perfil y cuando tengamos datos
-    if (!machinesInitializedRef.current && machineTypes.length > 0) {
-      const initialInputs = {};
-      machineTypes.forEach((machine) => {
-        initialInputs[machine.id] =
-          machine.millarPrice !== undefined ? machine.millarPrice.toString() : "";
-      });
-      setMachinePriceInputs(initialInputs);
-      machinesInitializedRef.current = true;
+    // Solo actualizar inputs si los valores realmente cambiaron
+    if (priceProfileId && machineTypes.length > 0) {
+      const lastMachines = lastMachinesRef.current;
+      let hasChanges = false;
+
+      // Verificar si hay cambios reales
+      if (machineTypes.length !== lastMachines.length) {
+        hasChanges = true;
+      } else {
+        hasChanges = machineTypes.some(machine => {
+          const lastMachine = lastMachines.find(m => m.id === machine.id);
+          return !lastMachine || lastMachine.millarPrice !== machine.millarPrice;
+        });
+      }
+
+      // Solo actualizar si hay cambios
+      if (hasChanges) {
+        const initialInputs = {};
+        machineTypes.forEach((machine) => {
+          initialInputs[machine.id] =
+            machine.millarPrice !== undefined ? machine.millarPrice.toString() : "";
+        });
+        setMachinePriceInputs(initialInputs);
+        lastMachinesRef.current = machineTypes.map(m => ({ ...m }));
+      }
     }
   }, [priceProfileId, machineTypes]);
 

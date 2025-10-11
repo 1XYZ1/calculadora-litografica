@@ -2,18 +2,18 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { doc, updateDoc, setDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { useFirebase } from "../../../context/FirebaseContext";
 import {
-  validateNewPaper,
   validatePrice,
-  generatePaperId,
 } from "../utils/priceValidation";
 import {
   ADMIN_ERROR_MESSAGES,
   ADMIN_SUCCESS_MESSAGES,
+  PAPER_TYPE_OPTIONS,
 } from "../../../utils/constants";
 
 /**
  * Hook para gestionar operaciones CRUD de tipos de papel
  * Maneja estados de formulario, validaciones y operaciones con Firestore
+ * **Sistema de opciones fijas (enum-like) - ID del documento = tipo de papel**
  *
  * @param {Array} papers - Lista de papeles del perfil actual
  * @param {Object} notification - Hook de notificaciones
@@ -23,41 +23,61 @@ export function usePaperManagement(papers, notification, priceProfileId) {
   const { db, appId, userId } = useFirebase();
 
   // Estados de formulario para añadir nuevo papel
-  const [newPaperName, setNewPaperName] = useState("");
+  const [newPaperType, setNewPaperType] = useState(""); // Cambiado de newPaperName
   const [newPaperPrice, setNewPaperPrice] = useState("");
 
   // Estado de inputs para actualizar precios de papeles existentes
   const [paperPriceInputs, setPaperPriceInputs] = useState({});
 
-  // Ref para rastrear si ya se inicializaron los valores
-  const initializedRef = useRef(false);
+  // Ref para rastrear el último perfil cargado y los últimos valores
   const lastProfileIdRef = useRef(null);
+  const lastPapersRef = useRef([]);
 
   // Reiniciar formulario de nuevo papel cuando cambia el perfil
   useEffect(() => {
-    setNewPaperName("");
+    setNewPaperType("");
     setNewPaperPrice("");
   }, [priceProfileId]);
 
   // Sincronizar los inputs con los precios actuales de papers
-  // Solo sincronizar una vez por perfil cuando los datos se cargan
   useEffect(() => {
-    // Si cambia el perfil, marcar como no inicializado
+    // Si cambia el perfil, resetear inputs
     if (lastProfileIdRef.current !== priceProfileId) {
-      initializedRef.current = false;
       lastProfileIdRef.current = priceProfileId;
       setPaperPriceInputs({});
+      lastPapersRef.current = [];
+
+      // Si no hay perfil, no continuar
+      if (!priceProfileId) {
+        return;
+      }
     }
 
-    // Solo inicializar una vez por perfil y cuando tengamos datos
-    if (!initializedRef.current && papers.length > 0) {
-      const initialInputs = {};
-      papers.forEach((paper) => {
-        initialInputs[paper.id] =
-          paper.pricePerSheet !== undefined ? paper.pricePerSheet.toString() : "";
-      });
-      setPaperPriceInputs(initialInputs);
-      initializedRef.current = true;
+    // Solo actualizar inputs si los valores realmente cambiaron
+    if (priceProfileId && papers.length > 0) {
+      const lastPapers = lastPapersRef.current;
+      let hasChanges = false;
+
+      // Verificar si hay cambios reales en los precios
+      if (papers.length !== lastPapers.length) {
+        hasChanges = true;
+      } else {
+        hasChanges = papers.some(paper => {
+          const lastPaper = lastPapers.find(p => p.id === paper.id);
+          return !lastPaper || lastPaper.pricePerSheet !== paper.pricePerSheet;
+        });
+      }
+
+      // Solo actualizar si hay cambios
+      if (hasChanges) {
+        const initialInputs = {};
+        papers.forEach((paper) => {
+          initialInputs[paper.id] =
+            paper.pricePerSheet !== undefined ? paper.pricePerSheet.toString() : "";
+        });
+        setPaperPriceInputs(initialInputs);
+        lastPapersRef.current = papers.map(p => ({ ...p }));
+      }
     }
   }, [priceProfileId, papers]);
 
@@ -66,24 +86,24 @@ export function usePaperManagement(papers, notification, priceProfileId) {
     setPaperPriceInputs((prev) => ({ ...prev, [paperId]: value }));
   }, []);
 
-  // Añadir un nuevo tipo de papel
+  // Añadir un nuevo tipo de papel (usando tipos fijos de PAPER_TYPE_OPTIONS)
   const addPaper = useCallback(async () => {
     if (!userId) {
       notification.showError(ADMIN_ERROR_MESSAGES.AUTH_REQUIRED);
       return;
     }
 
-    // Validar nombre y precio
-    const validation = validateNewPaper(newPaperName, newPaperPrice);
-    if (!validation.isValid) {
-      notification.showError(validation.error);
+    // Validar que se haya seleccionado un tipo
+    if (!newPaperType) {
+      notification.showError("Debe seleccionar un tipo de papel");
       return;
     }
 
-    // Generar ID a partir del nombre
-    const generatedId = generatePaperId(newPaperName);
-    if (!generatedId) {
-      notification.showError(ADMIN_ERROR_MESSAGES.INVALID_NAME);
+    // Validar precio
+    const paperOption = PAPER_TYPE_OPTIONS.find(p => p.value === newPaperType);
+    const validation = validatePrice(newPaperPrice, paperOption?.label || "Papel");
+    if (!validation.isValid) {
+      notification.showError(validation.error);
       return;
     }
 
@@ -93,29 +113,32 @@ export function usePaperManagement(papers, notification, priceProfileId) {
         return;
       }
 
-      // Verificar que no exista ya un papel con ese ID
+      // El ID del documento ES el tipo de papel (fijo)
       const docRef = doc(
         db,
         `artifacts/${appId}/users/${userId}/priceProfiles/${priceProfileId}/papers`,
-        generatedId
+        newPaperType // ID fijo basado en el tipo
       );
+
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        notification.showError(ADMIN_ERROR_MESSAGES.PAPER_EXISTS);
+        notification.showError("Este tipo de papel ya existe en este perfil");
         return;
       }
 
-      // Crear el nuevo documento
+      // Crear el nuevo documento con ID fijo
       await setDoc(docRef, {
-        name: newPaperName.trim(),
+        type: newPaperType,
+        label: paperOption.label,
+        defaultGramaje: paperOption.defaultGramaje,
         pricePerSheet: validation.price,
       });
 
       notification.showSuccess(ADMIN_SUCCESS_MESSAGES.PAPER_ADDED);
 
       // Limpiar formulario
-      setNewPaperName("");
+      setNewPaperType("");
       setNewPaperPrice("");
     } catch (e) {
       console.error("Error adding paper type:", e);
@@ -123,7 +146,7 @@ export function usePaperManagement(papers, notification, priceProfileId) {
     }
   }, [
     userId,
-    newPaperName,
+    newPaperType,
     newPaperPrice,
     db,
     appId,
@@ -296,8 +319,8 @@ export function usePaperManagement(papers, notification, priceProfileId) {
 
   return {
     // Estados de formulario
-    newPaperName,
-    setNewPaperName,
+    newPaperType, // Cambiado de newPaperName
+    setNewPaperType, // Cambiado de setNewPaperName
     newPaperPrice,
     setNewPaperPrice,
     paperPriceInputs,

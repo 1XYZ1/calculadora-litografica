@@ -3,6 +3,8 @@ import { useFirebase } from '../context/FirebaseContext';
 import {
   checkMigrationStatus,
   runAllMigrations,
+  migratePapersToFixedTypes,
+  updateQuotationPaperIds,
 } from '../utils/migrateFirestoreData';
 
 /**
@@ -16,6 +18,7 @@ export default function MigrationPanel() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [migrationResults, setMigrationResults] = useState(null);
+  const [paperMigrationResults, setPaperMigrationResults] = useState(null);
 
   const handleCheckStatus = async () => {
     setLoading(true);
@@ -85,6 +88,67 @@ ${successCount === 3 ? '🎉 ¡Todo completado exitosamente!' : '⚠️ Algunas 
     }
   };
 
+  // Handler: Migrar papeles a tipos fijos
+  const handleMigratePapers = async () => {
+    const confirmed = window.confirm(
+      '⚠️ ¿Migrar papeles a sistema de opciones fijas?\n\n' +
+      'Esto convertirá los papeles actuales a tipos predefinidos:\n' +
+      '- bond_blanco\n' +
+      '- bond_color\n' +
+      '- couche_mate\n' +
+      '- couche_brillante\n' +
+      '- opalina\n' +
+      '- cartulina_bristol\n\n' +
+      'Los documentos antiguos serán reemplazados.\n' +
+      '¿Continuar?'
+    );
+
+    if (!confirmed) return;
+
+    setLoading(true);
+    setStatus('Migrando papeles a tipos fijos...');
+
+    try {
+      const result = await migratePapersToFixedTypes(db, appId, userId);
+
+      if (result.success) {
+        setStatus('Actualizando IDs en quotations...');
+        const quotResult = await updateQuotationPaperIds(db, appId, userId);
+
+        setPaperMigrationResults({
+          papers: result,
+          quotations: quotResult,
+        });
+
+        setStatus(null);
+
+        const summary = `
+✅ Migración de Papeles Completada
+
+Papeles:
+- Perfiles procesados: ${result.profilesProcessed}
+- Papeles migrados: ${result.papersMigrated}
+- Documentos antiguos eliminados: ${result.papersDeleted}
+
+Quotations:
+- Quotations actualizadas: ${quotResult.quotationsUpdated || 0}
+- Items actualizados: ${quotResult.itemsUpdated || 0}
+
+🎉 ¡Migración completada! Los papeles ahora usan tipos fijos.
+        `;
+
+        alert(summary);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      setStatus(`Error: ${error.message}`);
+      alert(`❌ Error en la migración: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl p-6 shadow-lg">
       {/* Header */}
@@ -128,6 +192,7 @@ ${successCount === 3 ? '🎉 ¡Todo completado exitosamente!' : '⚠️ Algunas 
           <li>Agrega campos de plantillas a cotizaciones (isTemplate, templateName, etc.)</li>
           <li>Agrega estadísticas a clientes (quotationCount, lastQuotationDate, totalRevenue)</li>
           <li>Recalcula automáticamente las estadísticas basándose en datos existentes</li>
+          <li><strong className="text-blue-600">NUEVO:</strong> Migra papeles a sistema de opciones fijas (enum)</li>
         </ul>
         <p className="text-xs text-gray-500 mt-3">
           ⚠️ <strong>Importante:</strong> Esta operación es segura y no elimina datos. Puede ejecutarse múltiples veces.
@@ -163,34 +228,61 @@ ${successCount === 3 ? '🎉 ¡Todo completado exitosamente!' : '⚠️ Algunas 
       )}
 
       {/* Botones de acción */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <button
-          onClick={handleCheckStatus}
-          disabled={loading}
-          className="flex-1 btn-primary bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium shadow-md hover:shadow-lg transition-all"
-        >
-          <span className="flex items-center justify-center space-x-2">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-              />
-            </svg>
-            <span>Verificar Estado</span>
-          </span>
-        </button>
+      <div className="flex flex-col gap-3">
+        {/* Fila 1: Botones originales */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={handleCheckStatus}
+            disabled={loading}
+            className="flex-1 btn-primary bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium shadow-md hover:shadow-lg transition-all py-3 px-4 rounded-lg"
+          >
+            <span className="flex items-center justify-center space-x-2">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                />
+              </svg>
+              <span>Verificar Estado</span>
+            </span>
+          </button>
 
+          <button
+            onClick={handleRunMigration}
+            disabled={loading}
+            className="flex-1 btn-primary bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium shadow-md hover:shadow-lg transition-all py-3 px-4 rounded-lg"
+          >
+            <span className="flex items-center justify-center space-x-2">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+              <span>Ejecutar Migración</span>
+            </span>
+          </button>
+        </div>
+
+        {/* Fila 2: Botón de migración de papeles */}
         <button
-          onClick={handleRunMigration}
+          onClick={handleMigratePapers}
           disabled={loading}
-          className="flex-1 btn-primary bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium shadow-md hover:shadow-lg transition-all"
+          className="w-full btn-primary bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium shadow-md hover:shadow-lg transition-all py-3 px-4 rounded-lg"
         >
           <span className="flex items-center justify-center space-x-2">
             <svg
@@ -203,15 +295,15 @@ ${successCount === 3 ? '🎉 ¡Todo completado exitosamente!' : '⚠️ Algunas 
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <span>Ejecutar Migración</span>
+            <span>🆕 Migrar Papeles a Sistema de Opciones Fijas</span>
           </span>
         </button>
       </div>
 
-      {/* Resultados detallados */}
+      {/* Resultados detallados - Migración original */}
       {migrationResults && (
         <div className="mt-4 bg-white rounded-lg p-4 border border-green-200">
           <h4 className="font-bold text-gray-800 mb-2">📊 Resultados Detallados:</h4>
@@ -235,6 +327,45 @@ ${successCount === 3 ? '🎉 ¡Todo completado exitosamente!' : '⚠️ Algunas 
               <span className={migrationResults.clientStats.success ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
                 {migrationResults.clientStats.success ? '✅' : '❌'}
                 {' '}({migrationResults.clientStats.updatedCount || 0} actualizados)
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Resultados detallados - Migración de papeles */}
+      {paperMigrationResults && (
+        <div className="mt-4 bg-white rounded-lg p-4 border border-purple-200">
+          <h4 className="font-bold text-gray-800 mb-2">📄 Resultados Migración de Papeles:</h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Perfiles procesados:</span>
+              <span className="text-purple-600 font-medium">
+                {paperMigrationResults.papers.profilesProcessed}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Papeles migrados:</span>
+              <span className="text-purple-600 font-medium">
+                {paperMigrationResults.papers.papersMigrated}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Docs antiguos eliminados:</span>
+              <span className="text-purple-600 font-medium">
+                {paperMigrationResults.papers.papersDeleted}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Quotations actualizadas:</span>
+              <span className="text-green-600 font-medium">
+                {paperMigrationResults.quotations.quotationsUpdated || 0}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Items actualizados:</span>
+              <span className="text-green-600 font-medium">
+                {paperMigrationResults.quotations.itemsUpdated || 0}
               </span>
             </div>
           </div>
