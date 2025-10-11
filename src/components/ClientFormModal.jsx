@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import BaseModal from "./BaseModal";
 
 /**
@@ -13,6 +14,7 @@ function ClientFormModal({
   currentClient = null,
   priceProfiles = [],
 }) {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -32,16 +34,17 @@ function ClientFormModal({
           priceProfileId: currentClient.priceProfileId || "",
         });
       } else {
+        // En modo creación, dejar el perfil vacío (sin selección predeterminada)
         setFormData({
           name: "",
           email: "",
           phone: "",
-          priceProfileId: priceProfiles.length > 0 ? priceProfiles[0].id : "",
+          priceProfileId: "",
         });
       }
       setError("");
     }
-  }, [isOpen, mode, currentClient, priceProfiles]);
+  }, [isOpen, mode, currentClient]);
 
   // Handler del formulario
   const handleSubmit = (e) => {
@@ -168,9 +171,18 @@ function ClientFormModal({
           </label>
           <select
             value={formData.priceProfileId}
-            onChange={(e) =>
-              setFormData({ ...formData, priceProfileId: e.target.value })
-            }
+            onChange={(e) => {
+              const selectedValue = e.target.value;
+
+              // Si selecciona "__create_new__", navegar a configuración
+              if (selectedValue === "__create_new__") {
+                handleClose();
+                navigate('/config');
+                return;
+              }
+
+              setFormData({ ...formData, priceProfileId: selectedValue });
+            }}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             disabled={priceProfiles.length === 0}
           >
@@ -184,9 +196,19 @@ function ClientFormModal({
                     {profile.name}
                   </option>
                 ))}
+                <option value="__create_new__" className="text-indigo-600 font-medium">
+                  ➕ Crear nuevo perfil...
+                </option>
               </>
             )}
           </select>
+
+          {/* Texto de ayuda */}
+          {priceProfiles.length > 0 && (
+            <p className="mt-2 text-xs text-gray-500">
+              Los perfiles definen los precios de materiales y acabados para este cliente
+            </p>
+          )}
         </div>
 
         {/* Mensaje de error */}

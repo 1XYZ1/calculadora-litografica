@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
 import Calculator from '../pages/Calculator/Calculator';
 import Clients from '../pages/Clients/Clients';
+import ClientDetail from '../pages/ClientDetail/ClientDetail';
 import PriceProfiles from '../pages/PriceProfiles/PriceProfiles';
 import SavedQuotations from '../pages/SavedQuotations/SavedQuotations';
 
@@ -16,10 +17,15 @@ export const router = createBrowserRouter([
       },
       {
         path: 'calculator',
+        element: <Calculator />,
+        children: []
+      },
+      {
+        path: 'calculator/config',
         element: <Calculator />
       },
       {
-        path: 'calculator/new',
+        path: 'calculator/edit',
         element: <Calculator />
       },
       {
@@ -28,8 +34,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'clients/:clientId',
-        // Placeholder - se implementará en iteración 5
-        element: <Clients />
+        element: <ClientDetail />
       },
       {
         path: 'price-profiles',

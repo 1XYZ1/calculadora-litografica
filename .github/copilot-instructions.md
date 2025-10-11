@@ -1,170 +1,174 @@
-# Litografía Pro - AI Coding Agent Instructions
+# Litografía Pro - AI Coding Instructions
 
-**DO NOT create summary documents at the end of agent iterations.**
+React + Vite quotation system for lithographic printing. Stack: **Firebase Firestore**, **MinIO S3** (PDFs), **Tailwind CSS**. Multi-tenant price profiles with offset/digital printing calculations.
 
-## Project Overview
-React + Vite app for lithographic printing quotations. Stack: **Firebase Firestore** (data), **MinIO S3** (PDF storage), **Tailwind CSS** (styling). Manages multi-tenant price profiles, clients, and generates itemized quotations with complex offset/digital printing calculations.
+---
 
-## Critical Architecture
+## Critical Architecture Patterns
 
-### 1. Multi-Tenant Firestore Paths
-**All Firestore queries MUST use this exact path structure:**
+### 1. Multi-Tenant Firestore Path Structure
+**ALL queries MUST use this exact path:**
 ```
 artifacts/{appId}/users/{userId}/
   ├── priceProfiles/{profileId}/  → papers, plateSizes, machineTypes, finishingPrices, settings
-  ├── clients/                    → {id, name, priceProfileId, quotationCount, lastQuotationDate, ...}
-  └── quotations/                 → {id, items[], grandTotals, status, isTemplate, usageCount, ...}
+  ├── clients/                    → {id, name, priceProfileId, quotationCount, ...}
+  └── quotations/                 → {id, items[], status, isTemplate, ...}
 ```
-- Get `appId` from `getAppId()` in `src/config/firebase.js`
-- Get `db`, `userId` from `FirebaseContext` (via `useFirebase()` hook)
-- **Never** query Firestore without the full path prefix
+Get `appId`, `userId`, `db` from `useFirebase()` hook. **Never** query Firestore without full path prefix.
 
-### 2. Context Hierarchy (Strict Order)
-`App.jsx` nests providers in this order (do not reorder):
+### 2. Provider Hierarchy (DO NOT REORDER)
+```jsx
+<FirebaseProvider>        // Provides: db, auth, storage, user, userId, appId
+  <ClientsProvider>       // Realtime client cache with onSnapshot
+    <RouterProvider />    // React Router v6 navigation
+  </ClientsProvider>
+</FirebaseProvider>
 ```
-FirebaseProvider  → Provides: db, auth, storage, user, userId, appId
-  └─ BrowserRouter      → React Router navigation
-      └─ ClientsProvider  → Global client cache with realtime sync
-```
-**Consequence:** Firebase hooks (`useFirebase()`) only work inside `FirebaseProvider`. Client data (`useClients()`) only works inside `ClientsProvider`.
+Consequence: `useFirebase()` only works inside `FirebaseProvider`. `useClients()` only works inside `ClientsProvider`.
 
-### 3. Custom Hook Pattern
-All pages follow this structure:
+### 3. Page Structure Convention
 ```
 src/pages/{PageName}/
-  ├── {PageName}.jsx        # Main component (orchestrates hooks)
-  ├── components/           # UI components (presentational)
-  └── hooks/                # Business logic hooks (data, actions, state)
-      ├── use{Action}.js    # e.g., useQuotationDuplication, useClientsCRUD
-      └── use{Data}.js      # e.g., useDynamicPriceData, useClientsData
+  ├── {PageName}.jsx        # Orchestrates hooks, minimal logic
+  ├── components/           # Presentational UI only
+  └── hooks/                # Business logic (data, CRUD, calculations)
+      ├── use{Data}.js      # Data fetching: useDynamicPriceData
+      └── use{Action}.js    # Actions: useClientsCRUD
 ```
-**Convention:** Export hooks as named exports using `export function hookName()` (not default exports). This enables better tree-shaking and IDE autocomplete.
+**Export pattern:** `export function hookName()` (named exports only). No default exports for hooks.
 
-### 4. Price Profile → Client Binding
-- Each client has `priceProfileId` field
-- Quotations inherit prices from client's profile at calculation time
-- Use `useDynamicPriceData(clientId)` in Calculator to auto-load correct profile
-- Profile contains: papers, plateSizes, machineTypes, finishingPrices, profit%, bcvRate, ivaRate
+### 4. Price Profile Binding
+- Client has `priceProfileId` → Profile has `papers`, `plateSizes`, `machineTypes`, `finishingPrices`, `settings`
+- Use `useDynamicPriceData(clientId)` in Calculator to auto-load profile
+- Quotations inherit prices at calculation time (not stored directly)
 
-### 5. Calculation Engine (Offset vs Digital)
-Core logic in `src/utils/calculationEngine.js`:
+### 5. Offset vs Digital Calculation Paths
+**`src/utils/calculationEngine.js`:**
 
-**Offset printing** (most areas):
-1. `calculateBestFit()` → layout pieces on sheets
+**Offset** (all areas except `quarter_sheet_digital`):
+1. `calculateBestFit()` → layout pieces on sheet
 2. `calculatePaperCost()` → sheets × paper price
-3. `calculatePlateCost()` → plates based on colors (tiro/retiro/work-and-turn)
-4. Apply profit margin → convert to Bs via bcvRate
+3. `calculatePlateCost()` → colors × plate price (respect `isWorkAndTurn`)
+4. Apply `profitPercentage` → convert USD to Bs via `bcvRate`
 
-**Digital printing** (`printingAreaOption === 'quarter_sheet_digital'`):
-- Uses `calculateDigitalCost()` with finishing prices only
+**Digital** (`printingAreaOption === 'quarter_sheet_digital'`):
+- `calculateDigitalCost()` uses finishing prices only
 - **Skips** paper/plate/machine costs entirely
-- Check `isDigitalDuplex` flag for tiro/retiro pricing
+- Check `isDigitalDuplex` for duplex pricing
 
 **Special cases:**
 - `isTalonarios`: pieces = `numTalonarios × sheetsPerSet × copiesPerSet`
-- `isWorkAndTurn`: plates = `numColorsTiro` only (same plates print both sides)
+- `isWorkAndTurn`: only `numColorsTiro` plates needed (same plates both sides)
 
-## Development Workflows
+---
 
-### Running & Building
+## Development Commands
+
 ```bash
-npm run dev      # Vite dev server → localhost:5173
-npm run build    # Production build → dist/
-npm run preview  # Preview production build
+npm run dev      # Vite dev → localhost:5173 (default port 3000 is wrong)
+npm run build    # Production → dist/
+npm run preview  # Test production build locally
 ```
 
-### Environment Setup
-Create `.env` with these variables (see `README.md` for full list):
+### Environment Variables
+Create `.env` (never commit):
 ```env
-VITE_FIREBASE_API_KEY=...           # Firebase config (6 vars total)
+# Firebase (6 vars)
+VITE_FIREBASE_API_KEY=...
 VITE_FIREBASE_PROJECT_ID=...
-VITE_APP_ID=litografia-pro          # Multi-tenant app identifier
-VITE_STORAGE_ENDPOINT=...           # MinIO S3 endpoint (Railway)
+VITE_APP_ID=litografia-pro        # Multi-tenant app ID
+
+# MinIO S3 (Railway deployment)
+VITE_STORAGE_ENDPOINT=https://...railway.app
+VITE_STORAGE_ACCESS_KEY_ID=...
+VITE_STORAGE_SECRET_ACCESS_KEY=...
 VITE_STORAGE_BUCKET_NAME=litografia-pdfs
+VITE_STORAGE_PUBLIC_URL=https://...railway.app
 ```
-**Never commit `.env`** - use `.env.example` as template.
 
 ### Schema Migrations
-When Firestore schema changes:
-1. Add migration function to `src/utils/migrateFirestoreData.js`
-2. Update `runAllMigrations()` to include new migration
-3. Run via `MigrationPanel.jsx` component (temporary dev UI)
+When changing Firestore structure:
+1. Add function to `src/utils/migrateFirestoreData.js` (e.g., `migrateQuotations()`)
+2. Update `runAllMigrations()` to call new function
+3. Run via `MigrationPanel.jsx` (temporary dev UI in Calculator)
 
 **Recent migrations:**
-- Quotations: added `isTemplate`, `usageCount`, `duplicatedFrom`, `createdVia`
-- Clients: added `quotationCount`, `lastQuotationDate`, `totalRevenue`
+- Quotations: `isTemplate`, `usageCount`, `duplicatedFrom`, `createdVia`
+- Clients: `quotationCount`, `lastQuotationDate`, `totalRevenue`
 
-## Key Patterns & Conventions
+---
 
-### Navigation (React Router)
-**Always use React Router** - never `window.location` or hash routing:
-```javascript
-import { useNavigate, Link, useParams } from 'react-router-dom';
+## Key Conventions
 
-const navigate = useNavigate();
-navigate('/clients/123');     // Programmatic
-<Link to="/calculator">...</Link>  // Declarative
-const { clientId } = useParams();  // Route params
-```
-Routes defined in `src/router/index.jsx` with `MainLayout` wrapper.
-
-### Constants (No Magic Numbers)
-`src/utils/constants.js` exports all dimensions and config:
+### Constants Over Magic Numbers
+`src/utils/constants.js` exports ALL dimensions/config:
 ```javascript
 import { PRINTING_AREAS, FINISHING_KEYS, QUOTATION_STATUS } from '../utils/constants';
 
-const area = PRINTING_AREAS.HALF_SHEET;  // {value, label, width, height, divisor, ...}
-const price = finishingPrices[FINISHING_KEYS.DIGITAL_TIRO];
+PRINTING_AREAS.HALF_SHEET  // {value, label, width: 66, height: 48, divisor: 2, ...}
+FINISHING_KEYS.DIGITAL_TIRO  // "digital_quarter_tiro"
 ```
-**Never hardcode** sheet sizes, area options, or status values.
+**Never hardcode** sheet sizes, area values, or status strings.
+
+### React Router Navigation
+**Always use React Router** - never `window.location`:
+```javascript
+import { useNavigate, Link, useParams } from 'react-router-dom';
+
+navigate('/clients/123');           // Programmatic
+<Link to="/calculator">...</Link>   // Declarative
+const { clientId } = useParams();   // URL params
+```
+Routes in `src/router/index.jsx` use `createBrowserRouter` + `MainLayout`.
 
 ### Toast Notifications (Not Modals)
-Use `useToast()` for user feedback (not `ModalMessage.jsx` - deprecated):
 ```javascript
-import { useToast } from './hooks/useToast';
+import { useToast } from './hooks/useToast';  // Calculator/hooks only
 const { addToast } = useToast();
-addToast("Success message", "success");  // or "error", "info"
+addToast("Success message", "success");  // "error" | "info" | "success"
 ```
+**Deprecated:** `ModalMessage.jsx` (legacy modal component).
 
 ### Stepper Validation (Calculator)
-4-step wizard in `Calculator/components/Stepper/`:
+4-step wizard (`Calculator/components/Stepper/`):
 1. Basic info + printing config
 2. Materials/finishing (offset only)
 3. Item summary + cost breakdown
 4. Quotation summary + all items
 
 **Critical:**
-- Use `useStepperNavigation()` for step control
-- Use `useStepValidation()` for validation logic
-- Validation is **step-dependent** - modify `validateStep()` switch when changing step requirements
+- `useStepperNavigation()` manages current step, next/prev logic
+- `useStepValidation()` has `validateStep(stepNum, currentItem, items)` switch statement
+- When changing step requirements → update `validateStep()` case in `useStepValidation.js`
 
 ### PDF Generation & Storage
 ```javascript
 import { uploadPdfToStorage } from '../config/storage';
 const url = await uploadPdfToStorage(pdfBlob, userId, pdfId);
 ```
-**MinIO only** - this project does not use Firebase Storage. PDFs generated with jsPDF + html2canvas.
+**MinIO S3 only** - Firebase Storage is NOT used. PDFs via jsPDF + html2canvas.
+
+---
 
 ## Common Pitfalls
 
 | ❌ Don't | ✅ Do |
 |---------|-------|
-| Query Firestore without `artifacts/{appId}/users/{userId}/` prefix | Use `useFirebase()` to get `db`, `appId`, `userId` |
-| Use Firebase Storage | Use MinIO via `storage.js` (`uploadPdfToStorage()`) |
-| Hardcode sheet dimensions or areas | Import from `PRINTING_AREAS` constant |
-| Add stepper validation in components | Add to `useStepValidation()` hook |
-| Use deprecated `ModalMessage.jsx` | Use `useToast()` hook |
-| Create custom navigation contexts | Use React Router hooks (`useNavigate`, `Link`) |
-| Use `window.location.href` | Use `navigate('/path')` |
+| Query without `artifacts/{appId}/users/{userId}/` | Use `useFirebase()` → `{db, appId, userId}` |
+| Use Firebase Storage APIs | Use MinIO via `uploadPdfToStorage()` in `config/storage.js` |
+| Hardcode `66`, `48`, `"half_sheet"` | Import `PRINTING_AREAS.HALF_SHEET` from constants |
+| Add validation in step components | Update `validateStep()` switch in `useStepValidation.js` |
+| Use `ModalMessage.jsx` for feedback | Use `useToast()` hook |
+| Navigate with `window.location.href` | Use `useNavigate()` from React Router |
+| Default export hooks | Named exports: `export function useMyHook()` |
 
-## Project Roadmap Context
-See `ORDEN_IMPLEMENTACION.md` and `PLAN_MEJORA_WORKFLOW.md` for:
-- Planned features (client inline creation, template system, client stats)
-- Migration history and schema changes
-- Multi-phase implementation order
+---
 
-**Completed (Iteration 1):**
-- ✅ React Router with nested routes
-- ✅ ClientsContext global state
-- ✅ Quotation/client schema migrations (templates, stats)
-- ✅ Stepper integration replacing ItemFormPanel
+## Roadmap Context
+See `ORDEN_IMPLEMENTACION.md` and `PLAN_MEJORA_WORKFLOW.md` for feature roadmap and implementation phases.
+
+**Iteration 1 Complete:**
+✅ React Router + nested routes
+✅ ClientsContext global state
+✅ Schema migrations (templates, stats)
+✅ Stepper wizard integration

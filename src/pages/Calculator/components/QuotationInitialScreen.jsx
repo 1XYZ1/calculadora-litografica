@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useClients } from "../../../context/ClientsContext";
 import { useFirebase } from "../../../context/FirebaseContext";
 import { useClientsCRUD } from "../../Clients/hooks/useClientsCRUD";
-import { usePriceData } from "../../PriceProfiles/hooks/usePriceData";
+import { usePriceProfilesList } from "../../PriceProfiles/hooks/usePriceProfilesList";
 import ClientFormModal from "../../../components/ClientFormModal";
 
 /**
@@ -18,10 +19,11 @@ export default function QuotationInitialScreen({
   onBeginQuotation,
   onNavigateToClients,
 }) {
+  const navigate = useNavigate();
   const { clients, loading, refreshClients } = useClients();
   const { userId } = useFirebase();
   const { createClient } = useClientsCRUD();
-  const { priceProfiles } = usePriceData(userId);
+  const { profiles: priceProfiles } = usePriceProfilesList();
 
   const [selectedClient, setSelectedClient] = useState(null);
   const [showClientModal, setShowClientModal] = useState(false);
@@ -106,6 +108,19 @@ export default function QuotationInitialScreen({
   return (
     <div className="min-h-[85vh] flex items-center justify-center p-3 sm:p-4">
       <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl p-5 sm:p-8 max-w-2xl w-full">
+        {/* Botón volver */}
+        <div className="mb-4">
+          <button
+            onClick={() => navigate('/calculator')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="text-sm font-medium">Volver al inicio</span>
+          </button>
+        </div>
+
         {/* Título principal */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mb-3 sm:mb-4 shadow-lg">

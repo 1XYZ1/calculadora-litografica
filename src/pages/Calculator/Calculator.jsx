@@ -6,6 +6,7 @@ import ToastContainer from "../../components/ToastContainer";
 import QuotationInitialScreen from "./components/QuotationInitialScreen";
 import QuotationHeader from "./components/QuotationHeader";
 import PriceProfileIndicator from "./components/PriceProfileIndicator";
+import CalculatorHome from "./components/CalculatorHome";
 import {
   StepperHeader,
   StepNavigationButtons,
@@ -34,8 +35,9 @@ function QuotationCalculator() {
   const location = useLocation();
   const { db, appId, userId } = useFirebase();
 
-  // Obtener cotización cargada desde el estado de navegación (si viene de SavedQuotations)
+  // Obtener cotización cargada desde el estado de navegación (si viene de SavedQuotations o Templates)
   const loadedQuotationFromState = location.state?.quotation || null;
+  const preselectedClientId = location.state?.preselectedClientId || null;
   const [loadedQuotation, setLoadedQuotation] = useState(loadedQuotationFromState);
 
   // Hook: Sistema de notificaciones Toast
@@ -45,9 +47,6 @@ function QuotationCalculator() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Estado para controlar si se completó la pantalla inicial
-  const [isInitialScreenComplete, setIsInitialScreenComplete] = useState(false);
 
   // Hook: Cargar lista de clientes
   const { clients, loading: clientsLoading } = useClients();
@@ -180,11 +179,11 @@ function QuotationCalculator() {
 
   // Handler: Volver a la pantalla inicial (al guardar o cancelar)
   const handleReturnToInitialScreen = useCallback(() => {
-    setIsInitialScreenComplete(false);
     resetQuotation();
     resetItemForm();
     goToStep(1);
-  }, [resetQuotation, resetItemForm, goToStep]);
+    navigate('/calculator'); // Navegar de vuelta al home
+  }, [resetQuotation, resetItemForm, goToStep, navigate]);
 
   // Handler: Comenzar cotización desde la pantalla inicial
   const handleBeginQuotation = useCallback(() => {
@@ -195,8 +194,9 @@ function QuotationCalculator() {
       );
       return;
     }
-    setIsInitialScreenComplete(true);
-  }, [mainQuotationName, clientId, showToast]);
+    // Navegar a la ruta de edición (stepper)
+    navigate('/calculator/edit');
+  }, [mainQuotationName, clientId, showToast, navigate]);
 
   // Handler: Editar item existente (desde Paso 6)
   const handleEditItem = useCallback(
@@ -300,10 +300,24 @@ function QuotationCalculator() {
   // Auto-scroll al cargar una cotización para editar
   useEffect(() => {
     if (editingQuotationId && items.length > 0) {
-      setIsInitialScreenComplete(true); // Saltar pantalla inicial si está editando
+      navigate('/calculator/edit', { replace: true }); // Asegurar que está en ruta edit
       goToStep(4); // Ir directo al resumen (Paso 4) si está editando
     }
-  }, [editingQuotationId, items.length, goToStep]);
+  }, [editingQuotationId, items.length, goToStep, navigate]);
+
+  // Detectar si se cargó una cotización desde el estado de navegación
+  useEffect(() => {
+    if (loadedQuotationFromState) {
+      navigate('/calculator/edit', { replace: true }); // Ya tiene datos cargados, ir a stepper
+    }
+  }, [loadedQuotationFromState, navigate]);
+
+  // Detectar si viene un cliente pre-seleccionado (desde creación de cliente nuevo)
+  useEffect(() => {
+    if (preselectedClientId && location.pathname === '/calculator/config') {
+      setClientId(preselectedClientId);
+    }
+  }, [preselectedClientId, location.pathname, setClientId]);
 
   // Ref para el contenedor de pasos (para auto-scroll y focus)
   const stepContainerRef = React.useRef(null);
@@ -409,8 +423,10 @@ function QuotationCalculator() {
         />
       )}
 
-      {/* Pantalla inicial: Selección de presupuesto y cliente */}
-      {!isInitialScreenComplete ? (
+      {/* Renderizar según la ruta actual */}
+      {location.pathname === '/calculator' && <CalculatorHome />}
+
+      {location.pathname === '/calculator/config' && (
         <QuotationInitialScreen
           mainQuotationName={mainQuotationName}
           setMainQuotationName={setMainQuotationName}
@@ -420,9 +436,26 @@ function QuotationCalculator() {
           onBeginQuotation={handleBeginQuotation}
           onNavigateToClients={() => navigate("/clients")}
         />
-      ) : (
+      )}
+
+      {location.pathname === '/calculator/edit' && (
         /* Contenedor principal del Stepper */
         <div className="max-w-7xl mx-auto bg-white p-4 sm:p-6 lg:p-8 rounded-none sm:rounded-2xl shadow-xl">
+          {/* Botón volver a configuración - Solo en paso 1 */}
+          {currentStep === 1 && (
+            <div className="mb-4">
+              <button
+                onClick={() => navigate('/calculator/config')}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="text-sm font-medium">Volver a configuración</span>
+              </button>
+            </div>
+          )}
+
           {/* Título */}
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-800 text-center mb-4 sm:mb-6">
             {editingQuotationId
