@@ -9,6 +9,9 @@ const QuotationsListByClient = ({
   onEdit,
   onDelete,
   onStatusChange,
+  onDuplicate,
+  onToggleTemplate,
+  onUpdateTemplateName,
 }) => {
   const clientNames = Object.keys(groupedQuotations);
 
@@ -32,6 +35,9 @@ const QuotationsListByClient = ({
             onEdit={onEdit}
             onDelete={onDelete}
             onStatusChange={onStatusChange}
+            onDuplicate={onDuplicate}
+            onToggleTemplate={onToggleTemplate}
+            onUpdateTemplateName={onUpdateTemplateName}
           />
         );
       })}

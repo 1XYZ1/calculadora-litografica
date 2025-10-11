@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import { formatQuotationDate } from "../utils/quotationUtils";
 import StatusDropdown from "./StatusDropdown";
 
 /**
- * QuotationCard – fila de "Presupuestos/Cotizaciones"
+ * QuotationCard – fila de “Presupuestos/Cotizaciones”
  * Zonas: [Select] | [Nombre + Cliente + Fecha] | [Totales] | [Estado/Tags] | [Acciones]
- * ACTUALIZADO: Incluye funcionalidad de plantillas
  */
 const QuotationCard = ({
   quotation,
@@ -15,8 +14,6 @@ const QuotationCard = ({
   onPreview,
   onDuplicate,
   onShare,
-  onToggleTemplate,
-  onUpdateTemplateName,
   selectable = false,
   selected = false,
   onToggleSelect,
@@ -32,14 +29,7 @@ const QuotationCard = ({
     timestamp,
     grandTotals = {},
     status: quotationStatus,
-    isTemplate = false,
-    templateName = "",
-    usageCount = 0,
   } = quotation || {};
-
-  const [editingTemplateName, setEditingTemplateName] = useState(false);
-  const [tempTemplateName, setTempTemplateName] = useState(templateName);
-
   const usd = Number(grandTotals.totalGeneral || 0);
   const bs = Number(grandTotals.totalCostInBs || 0);
   const showBs =
@@ -57,36 +47,12 @@ const QuotationCard = ({
     if (selectable && onToggleSelect) onToggleSelect(id);
   };
 
-  const handleToggleTemplate = () => {
-    if (onToggleTemplate) {
-      if (!isTemplate) {
-        // Al marcar como plantilla, usar el nombre de la cotización como default
-        onToggleTemplate(id, tempTemplateName || name);
-      } else {
-        onToggleTemplate(id, null);
-      }
-    }
-  };
-
-  const handleSaveTemplateName = () => {
-    if (onUpdateTemplateName && tempTemplateName.trim()) {
-      onUpdateTemplateName(id, tempTemplateName.trim());
-    }
-    setEditingTemplateName(false);
-  };
-
-  const handleCancelEditTemplateName = () => {
-    setTempTemplateName(templateName);
-    setEditingTemplateName(false);
-  };
-
   return (
     <li
       className={[
         "rounded-2xl border bg-white transition-all duration-200",
         "hover:bg-gray-50 hover:shadow-md",
         selected ? "ring-2 ring-blue-500 ring-offset-0" : "border-gray-200",
-        isTemplate ? "border-l-4 border-l-amber-400" : "",
       ].join(" ")}
     >
       {/* Grid: en desktop 5 zonas; en móvil apila */}
@@ -120,7 +86,7 @@ const QuotationCard = ({
           )}
         </div>
 
-        {/* 2) Nombre + Cliente + Fecha + Template Info */}
+        {/* 2) Nombre + Cliente + Fecha */}
         <div className="min-w-0">
           <div className="flex items-start gap-2">
             <h3 className="text-base md:text-lg font-semibold text-gray-900 leading-tight truncate">
@@ -128,12 +94,6 @@ const QuotationCard = ({
             </h3>
             {status && (
               <Badge tone={statusTone(status)}>{statusLabel(status)}</Badge>
-            )}
-            {isTemplate && (
-              <Badge tone="warning">
-                <TemplateIcon className="w-3 h-3 inline mr-1" />
-                Plantilla
-              </Badge>
             )}
           </div>
 
@@ -148,61 +108,7 @@ const QuotationCard = ({
             <span className="text-gray-600">
               {timestamp ? formatQuotationDate(timestamp) : "Sin fecha"}
             </span>
-            {isTemplate && usageCount > 0 && (
-              <>
-                <span className="text-gray-500">•</span>
-                <span className="text-amber-600 font-medium">
-                  Usada {usageCount} {usageCount === 1 ? "vez" : "veces"}
-                </span>
-              </>
-            )}
           </div>
-
-          {/* Template Name Input */}
-          {isTemplate && onUpdateTemplateName && (
-            <div className="mt-2">
-              {editingTemplateName ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={tempTemplateName}
-                    onChange={(e) => setTempTemplateName(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter") handleSaveTemplateName();
-                      if (e.key === "Escape") handleCancelEditTemplateName();
-                    }}
-                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nombre de la plantilla"
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleSaveTemplateName}
-                    className="p-1 text-green-600 hover:bg-green-50 rounded"
-                    title="Guardar"
-                  >
-                    ✓
-                  </button>
-                  <button
-                    onClick={handleCancelEditTemplateName}
-                    className="p-1 text-red-600 hover:bg-red-50 rounded"
-                    title="Cancelar"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setEditingTemplateName(true)}
-                  className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
-                >
-                  <span className="font-medium">
-                    {templateName || "Sin nombre descriptivo"}
-                  </span>
-                  <PencilIcon className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-          )}
 
           {!!tags?.length && (
             <div className="mt-1 flex flex-wrap gap-1.5">
@@ -243,16 +149,6 @@ const QuotationCard = ({
 
             {/* Acciones - Móvil */}
             <div className="flex items-center justify-end gap-2 md:hidden">
-              {/* Checkbox de Plantilla */}
-              <label className="flex items-center gap-1.5 cursor-pointer p-2 rounded hover:bg-gray-50">
-                <input
-                  type="checkbox"
-                  checked={isTemplate}
-                  onChange={handleToggleTemplate}
-                  className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                />
-                <span className="text-sm text-gray-700">Plantilla</span>
-              </label>
               {onPreview && (
                 <IconButton
                   title="Previsualizar"
@@ -297,16 +193,6 @@ const QuotationCard = ({
 
         {/* 5) Acciones - Desktop */}
         <div className="order-4 md:order-none md:justify-self-end hidden md:flex items-center justify-end gap-2">
-          {/* Checkbox de Plantilla */}
-          <label className="flex items-center gap-1.5 cursor-pointer p-2 rounded hover:bg-gray-50">
-            <input
-              type="checkbox"
-              checked={isTemplate}
-              onChange={handleToggleTemplate}
-              className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-            />
-            <span className="text-sm text-gray-700">Plantilla</span>
-          </label>
           {onPreview && (
             <IconButton
               title="Previsualizar"
@@ -355,7 +241,7 @@ const Badge = ({ children, tone = "default" }) => {
     default: "bg-gray-100 text-gray-700",
     info: "bg-blue-50 text-blue-700",
     success: "bg-emerald-50 text-emerald-700",
-    warning: "bg-gray-50 text-gray-700",
+    warning: "bg-amber-50 text-amber-700",
     danger: "bg-red-50 text-red-700",
     neutral: "bg-slate-50 text-slate-700",
   };
@@ -395,9 +281,9 @@ const IconButton = ({
 );
 
 /* Iconos (outline, 24x24) */
-const PencilIcon = ({ className = "h-5 w-5" }) => (
+const PencilIcon = () => (
   <svg
-    className={className}
+    className="h-5 w-5"
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
@@ -483,16 +369,6 @@ const ClientIcon = () => (
       strokeWidth={2}
       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
     />
-  </svg>
-);
-
-const TemplateIcon = ({ className = "h-5 w-5" }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-  >
-    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
   </svg>
 );
 

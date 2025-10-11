@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useClients } from "../../../hooks/useClients";
+import { useClients } from "../../../context/ClientsContext";
+import { useFirebase } from "../../../context/FirebaseContext";
+import { useClientsCRUD } from "../../Clients/hooks/useClientsCRUD";
+import { usePriceData } from "../../PriceProfiles/hooks/usePriceData";
+import ClientFormModal from "../../../components/ClientFormModal";
 
 /**
  * Pantalla inicial para configurar el presupuesto antes de entrar al stepper
@@ -14,8 +18,14 @@ export default function QuotationInitialScreen({
   onBeginQuotation,
   onNavigateToClients,
 }) {
-  const { clients, loading } = useClients();
+  const { clients, loading, refreshClients } = useClients();
+  const { userId } = useFirebase();
+  const { createClient } = useClientsCRUD();
+  const { priceProfiles } = usePriceData(userId);
+
   const [selectedClient, setSelectedClient] = useState(null);
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [creatingClient, setCreatingClient] = useState(false);
 
   // Sincronizar cliente seleccionado cuando cambia el clientId desde fuera
   useEffect(() => {
@@ -30,6 +40,13 @@ export default function QuotationInitialScreen({
   // Manejar cambio de cliente
   const handleClientChange = (e) => {
     const selectedId = e.target.value;
+
+    // Si selecciona "__new__", abrir modal de creación
+    if (selectedId === "__new__") {
+      setShowClientModal(true);
+      e.target.value = clientId || ""; // Resetear el select
+      return;
+    }
 
     if (!selectedId) {
       setSelectedClient(null);
@@ -48,6 +65,38 @@ export default function QuotationInitialScreen({
     setTimeout(() => {
       e.target.blur();
     }, 100);
+  };
+
+  // Manejar creación de cliente desde modal
+  const handleCreateClient = async (clientData) => {
+    setCreatingClient(true);
+    try {
+      const result = await createClient(clientData);
+
+      if (result.success) {
+        // Refrescar lista de clientes
+        await refreshClients();
+
+        // Auto-seleccionar el cliente recién creado
+        setClientId(result.clientId);
+        setClientName(clientData.name);
+
+        // Encontrar y establecer el cliente en el estado local
+        setTimeout(() => {
+          const newClient = clients.find((c) => c.id === result.clientId);
+          if (newClient) {
+            setSelectedClient(newClient);
+          }
+        }, 100);
+
+        setShowClientModal(false);
+      }
+    } catch (error) {
+      console.error("Error al crear cliente:", error);
+      alert(error.message || "Error al crear el cliente");
+    } finally {
+      setCreatingClient(false);
+    }
   };
 
   // Verificar si se puede comenzar la cotización
@@ -176,28 +225,15 @@ export default function QuotationInitialScreen({
                       {client.company && ` - ${client.company}`}
                     </option>
                   ))}
+                  <option value="__new__" className="font-semibold text-blue-600">
+                    + Crear nuevo cliente
+                  </option>
                 </select>
 
-                {/* Botón para crear nuevo cliente */}
-                <button
-                  onClick={onNavigateToClients}
-                  className="text-blue-600 hover:text-blue-700 text-sm sm:text-sm font-medium flex items-center min-h-[44px]"
-                >
-                  <svg
-                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                    />
-                  </svg>
-                  Crear nuevo cliente
-                </button>
+                {/* Información adicional */}
+                <p className="text-xs sm:text-sm text-gray-500">
+                  O crea un nuevo cliente directamente desde aquí
+                </p>
               </div>
             )}
           </div>
@@ -264,6 +300,15 @@ export default function QuotationInitialScreen({
           </p>
         </div>
       </div>
+
+      {/* Modal de creación de cliente */}
+      <ClientFormModal
+        isOpen={showClientModal}
+        onClose={() => setShowClientModal(false)}
+        onSubmit={handleCreateClient}
+        mode="create"
+        priceProfiles={priceProfiles}
+      />
     </div>
   );
 }

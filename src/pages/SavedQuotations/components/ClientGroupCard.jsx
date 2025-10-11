@@ -29,6 +29,8 @@ const ClientGroupCard = ({
   onPreview,
   onDuplicate,
   onShare,
+  onToggleTemplate,
+  onUpdateTemplateName,
   currency = "USD",
   showBolivars,
 }) => {
@@ -174,6 +176,8 @@ const ClientGroupCard = ({
                   onPreview={onPreview}
                   onDuplicate={onDuplicate}
                   onShare={onShare}
+                  onToggleTemplate={onToggleTemplate}
+                  onUpdateTemplateName={onUpdateTemplateName}
                   currency={currency}
                 />
               ))}

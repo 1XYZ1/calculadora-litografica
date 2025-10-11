@@ -1,211 +1,167 @@
-# Litografía Pro - AI Agent Instructions
+# Litografía Pro - AI Coding Agent Instructions
+
+NO HAGAS DOCUMENTOS DE RESUMEN AL FINALIZAR LA ITERACION DE MODO AGENTE
 
 ## Project Overview
+React + Vite application for lithographic printing quotations. Uses **Firebase Firestore** for data persistence, **MinIO (S3-compatible)** for PDF storage, and **Tailwind CSS** for styling. The app manages price profiles, clients, and generates itemized quotations with complex printing calculations.
 
-React-based quotation system for printing/lithography businesses. Uses Firebase (Firestore + Auth), MinIO (S3) for PDF storage, and Tailwind CSS. The app calculates printing costs based on materials, dimensions, colors, and finishing options.
+## Critical Architecture Patterns
 
-## Architecture Patterns
-
-### Multi-Tier Data Storage (Firestore)
-All data uses this path structure: `/artifacts/{appId}/users/{userId}/collections/{collectionName}`
-- `appId` comes from `VITE_APP_ID` env var
-- Collections: `quotations`, `clients`, `paperTypes`, `plateSizes`, `machineTypes`, `finishingPrices`, `profitPercentage`, `bcvRate`, `ivaPercentage`
-- Use `onSnapshot` for real-time updates in hooks (see `useDynamicPriceData.js`)
-
-### Page-Level Architecture (Feature-Based Modules)
-Each page in `src/pages/` is a self-contained module:
+### Multi-Tenant Firestore Structure
+Data is scoped by user with a specific hierarchy:
 ```
-pages/
-  Calculator/
-    Calculator.jsx          # 150 lines - orchestrator only
-    hooks/                  # Business logic (5 custom hooks)
-    components/             # UI components (15+ components)
-    STEPPER_INTEGRATION_SUMMARY.md  # Stepper implementation details
-  PriceProfiles/           # Price management
-  SavedQuotations/         # Quotation CRUD
-  Clients/                 # Client management
+artifacts/{appId}/users/{userId}/
+  ├── priceProfiles/{profileId}/
+  │   ├── papers/
+  │   ├── plateSizes/
+  │   ├── machineTypes/
+  │   ├── finishingPrices/
+  │   └── settings/{profit, bcvRate, ivaRate}
+  ├── clients/
+  └── quotations/
 ```
 
-**Critical**: Never put business logic in page components. Extract to custom hooks following existing patterns.
+**Always use this path pattern** when working with Firestore. See `src/config/firebase.js` for `appId` retrieval and `FirebaseContext.jsx` for the context provider that exposes `db`, `appId`, `userId`.
 
-### Custom Hooks Pattern
-The Calculator was refactored from 1,622 monolithic lines to modular hooks:
-- `useDynamicPriceData` - Firebase real-time subscriptions (7 `onSnapshot` listeners)
-- `useItemCalculations` - Cost calculation engine (uses `useMemo` for performance)
-- `useItemForm` - Form state management (42 states consolidated)
-- `useQuotation` - CRUD operations for quotations
-- `useStepperNavigation` - Stepper flow control
+### Context Hierarchy (Nested Providers)
+In `App.jsx`, contexts are nested in this specific order:
+1. `FirebaseProvider` (outermost - provides auth, db, storage)
+2. `BrowserRouter` (React Router for navigation)
+3. `ClientsProvider` (global client data cache)
 
-**Pattern**: Create focused hooks that return state + handlers. See `src/pages/Calculator/hooks/` for examples.
+**Navigation**: Use React Router hooks (`useNavigate`, `useLocation`, `useParams`) and components (`<Link>`, `<Navigate>`) for all navigation needs.
 
-### Calculation Engine (`src/utils/calculationEngine.js`)
-Core printing cost logic (380 lines). Key functions:
-- `calculateBestFit()` - Layout optimization for piece fitting
-- `calculateDigitalCost()` - Digital printing costs
-- `calculateOffsetCost()` - Offset printing with plates, sheets, runs
-- Uses constants from `PRINTING_AREAS`, `FINISHING_KEYS` in `constants.js`
+**Never** call Firebase hooks outside the FirebaseProvider tree.
 
-**Important**: All cost calculations happen in `useItemCalculations` hook using this engine. Never duplicate calculation logic.
+### Price Profiles & Client Association
+- Each **client** has a `priceProfileId` that determines which prices are used for their quotations
+- When calculating quotations, use `useDynamicPriceData(clientId)` to automatically load the correct price profile
+- Price profiles contain: papers, plateSizes, machineTypes, finishingPrices, profit%, BCV rate, IVA%
 
-### Printing Area Configuration
-Defined in `src/utils/constants.js` as `PRINTING_AREAS`:
+### Calculation Engine Flow
+The core calculation lives in `src/utils/calculationEngine.js`:
+1. `calculateBestFit()` - Determines optimal piece layout on sheets
+2. `calculatePaperCost()` - Sheet count × paper price
+3. `calculatePlateCost()` - Plates needed based on colors (tiro/retiro/work-and-turn)
+4. `calculateDigitalCost()` - Digital printing uses finishing prices, not paper/plates
+5. Apply profit margin and convert to Bs using BCV rate
+
+**Digital vs Offset:** Check `printingAreaOption === 'quarter_sheet_digital'` to determine flow. Digital bypasses paper/plate/machine costs entirely.
+
+## Key Conventions
+
+### Component Organization
+- **Pages** (`src/pages/`): Top-level routes with their own component/hooks subdirectories
+- **Router** (`src/router/`): React Router configuration and route definitions
+- **Layouts** (`src/layouts/`): Layout components (e.g., MainLayout with navigation)
+- **Shared components** (`src/components/`): Modals, Header, Toast system
+- **Hooks pattern**: Custom hooks are co-located with pages (e.g., `Calculator/hooks/useQuotation.js`)
+
+### Stepper Pattern (Calculator Page)
+Calculator uses a 4-step wizard (`src/pages/Calculator/components/Stepper/`):
+1. `Step1Complete.jsx` - Basic info + printing config
+2. `Step2MaterialsFinishing.jsx` - Paper/plates (offset only) + finishing options
+3. `Step3ItemSummary.jsx` - Review single item with inline cost breakdown
+4. `Step4QuotationSummary.jsx` - All items + grand total
+
+Navigation is handled by `useStepperNavigation` and `useStepValidation` hooks. **Do not** modify step order without updating validation dependencies.
+
+### Constants Usage
+`src/utils/constants.js` exports all sheet dimensions, printing areas, and finishing keys:
+- Use `PRINTING_AREAS` object for area configs (contains width, height, divisor, machineMatch, plateSizeMatch)
+- Use `FINISHING_KEYS` for consistent finishing price lookups
+- Use `QUOTATION_STATUS` for status field values
+
+### Toast System (Not Modal)
+This project uses a **Toast notification system** (`ToastContainer.jsx`), not traditional modals for feedback messages. Use `useToast()` hook in Calculator:
 ```javascript
-PRINTING_AREAS.HALF_SHEET = {
-  value: "half_sheet",
-  width: 66, height: 48,
-  divisor: 2,
-  plateSizeMatch: "1/2 pliego",  // Auto-selects plate
-  machineMatch: "KORD"            // Auto-selects machine
-}
+const { addToast } = useToast();
+addToast("Mensaje", "success"); // or "error", "info"
 ```
-When user selects printing area, `useItemForm` automatically selects matching plate size and machine.
 
 ## Development Workflows
 
-### Running Locally
+### Running the App
 ```bash
-npm run dev          # Vite dev server on :3000
-npm run build        # Production build to dist/
-npm run preview      # Preview production build
+npm run dev      # Start Vite dev server (localhost:5173)
+npm run build    # Production build
+npm run preview  # Preview production build
 ```
 
-### Environment Setup
-Requires `.env` with 11 variables (Firebase + MinIO). See README.md for full template. Critical vars:
-- `VITE_APP_ID` - Used in all Firestore paths
-- `VITE_STORAGE_ENDPOINT` - MinIO endpoint on Railway
-- Firebase: `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_PROJECT_ID`, etc.
+### Environment Variables
+Required in `.env` (never commit):
+- Firebase: `VITE_FIREBASE_*` (6 variables)
+- MinIO: `VITE_STORAGE_*` (endpoint, credentials, bucket)
+- App: `VITE_APP_ID`
 
-### Firebase Context Pattern
-`FirebaseProvider` wraps entire app (see `App.jsx`). Access via `useFirebase()`:
+See `README.md` for complete list and setup instructions.
+
+### Data Migration
+When schema changes occur, use migration utilities in `src/utils/migrateFirestoreData.js`:
+- `runAllMigrations()` - Run all pending migrations
+- `checkMigrationStatus()` - Verify migration state
+- Add new migration functions for schema evolution
+
+The `MigrationPanel.jsx` component provides a UI for running migrations (temporary dev tool).
+
+## Special Considerations
+
+### Talonarios (Carbonless Forms)
+When `isTalonarios` is true, pieces are calculated as:
 ```javascript
-const { db, auth, storage, user, userId, appId } = useFirebase();
+totalPieces = numTalonarios × sheetsPerSet × copiesPerSet
 ```
-- `db` = Firestore instance
-- `storage` = MinIO S3 client (not Firebase Storage!)
-- `user` = Current authenticated user (Google OAuth)
+This affects layout calculations and must be reflected in quotation display.
+
+### Work-and-Turn Printing
+When `isWorkAndTurn` is true:
+- Only `numColorsTiro` is used (same plates print both sides)
+- Plate count = `numColorsTiro` (not tiro + retiro)
+- This is **only** for offset printing
 
 ### PDF Generation & Storage
-1. Generate PDF with jsPDF (quotation preview)
-2. Convert to Blob
-3. Upload via `uploadPdfToStorage()` in `src/config/storage.js`
-4. MinIO stores at `quotations_pdf/{userId}/{pdfId}`
-5. Returns public URL for sharing
-
-## Project-Specific Conventions
-
-### Code Language: English names, Spanish comments
+PDFs are generated client-side (jsPDF + html2canvas), then uploaded to MinIO using S3 SDK:
 ```javascript
-// ✅ Correct
-const calculateTotalCost = (item) => {
-  // Aplicar margen de ganancia según tipo de cliente
-  const profitMargin = user.isWholesale ? 0.15 : 0.3;
-  return baseCost * (1 + profitMargin);
-};
-
-// ❌ Wrong - don't use Spanish variable names or English comments
-const calcularCosto = (item) => {
-  // Apply profit margin based on client type
-  ...
-};
+import { uploadPdfToStorage } from '../config/storage';
+const url = await uploadPdfToStorage(pdfBlob, userId, pdfId);
 ```
+**Do not** use Firebase Storage - this project uses MinIO exclusively.
 
-### Component Structure: Hooks → UI
-Page components should only:
-1. Import necessary hooks
-2. Render UI with Tailwind classes
-3. Pass data/handlers to child components
-
-**Example** from `Calculator.jsx`:
+### Navigation & Routing
+This project uses **React Router** for all navigation:
 ```javascript
-function Calculator() {
-  const { db, userId, appId } = useFirebase();
-  const priceData = useDynamicPriceData({ db, appId, userId });
-  const itemForm = useItemForm({ plateSizes, machineTypes });
-  const calculations = useItemCalculations({ currentItem, priceData });
+import { useNavigate, useLocation, useParams, Link } from 'react-router-dom';
 
-  return (
-    <div className="container-responsive">
-      <Step1 {...itemForm} />
-      <Step2 {...calculations} />
-    </div>
-  );
-}
+// Programmatic navigation
+const navigate = useNavigate();
+navigate('/clients/123');
+navigate(-1); // Go back
+
+// Declarative navigation
+<Link to="/calculator/new">Nueva Cotización</Link>
+
+// Route parameters
+const { clientId } = useParams();
+
+// Current location
+const location = useLocation();
 ```
+All routes are defined in `src/router/index.jsx`. Use `MainLayout` for pages that need the shared navigation/header.
 
-### State Management Strategy
-- Global auth state: `FirebaseContext`
-- Page-level state: Custom hooks (not Redux/Zustand)
-- Real-time data: `onSnapshot` listeners in hooks
-- Form state: `useItemForm` pattern with consolidated state object
+## Common Pitfalls
+- ❌ Don't query Firestore without the full `artifacts/{appId}/users/{userId}/` path
+- ❌ Don't mix Firebase Storage with MinIO - only use MinIO via `storage.js`
+- ❌ Don't hardcode sheet dimensions - use `PRINTING_AREAS` constants
+- ❌ Don't create validation logic outside `useStepValidation` hook for stepper steps
+- ❌ Don't use `ModalMessage.jsx` - it's deprecated, use `useToast()` instead
+- ❌ Don't create custom navigation contexts - use React Router hooks (`useNavigate`, `useLocation`, `useParams`)
+- ❌ Don't use `window.location` or hash routing - use React Router's declarative navigation
 
-### Responsive Design Pattern
-Uses custom Tailwind classes in `index.css`:
-```css
-.container-responsive { @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl; }
-.text-responsive-xl { @apply text-2xl sm:text-3xl lg:text-4xl; }
-.p-responsive { @apply p-4 sm:p-6 lg:p-8; }
-```
-Always use these instead of manual breakpoints.
+## Recent Refactorings
+Per `RESUMEN_ITERACION_1.md`, the following were completed:
+- ✅ React Router configuration with nested routes
+- ✅ ClientsContext for global client state
+- ✅ Schema migration for quotations (isTemplate, usageCount fields) and clients (stats fields)
+- ✅ Stepper integration replacing old ItemFormPanel
 
-### Stepper Integration (Calculator)
-6-step wizard for creating quotations. Key files:
-- `src/pages/Calculator/components/Stepper/` - Step1 through Step6
-- `useStepperNavigation` - Navigation logic
-- `useStepValidation` - Validation per step
-- See `STEPPER_INTEGRATION_SUMMARY.md` for complete integration details
-
-### Toast Notifications (Not Modals)
-Replaced `ModalMessage` with toast system:
-```javascript
-const { toasts, addToast, removeToast } = useToast();
-
-addToast("Cotización guardada exitosamente", "success");
-addToast("Error al guardar", "error");
-```
-Display with `<ToastContainer toasts={toasts} onRemove={removeToast} />`
-
-## Common Gotchas
-
-1. **Don't use Firebase Storage** - This project uses MinIO (S3 compatible) on Railway. Import from `src/config/storage.js`.
-
-2. **Firestore path structure** - Always include `artifacts/{appId}/users/{userId}` prefix. Never write to root collections.
-
-3. **UV Size Auto-sync** - When `isUVSelected` is true, `uvSizeOption` automatically matches `printingAreaOption`. See `useItemForm.js` lines 60-70.
-
-4. **Work-and-Turn vs Tiro/Retiro** - Different plate calculation logic. Work-and-turn uses only tiro colors. See `calculatePlateCost()` in `calculationEngine.js`.
-
-5. **Digital printing areas** - `quarter_sheet_digital` skips plate/machine selection. Check `isDigital` flag from `PRINTING_AREAS`.
-
-6. **Sobrante (waste)** - Only applies to offset printing. Digital printing uses exact sheet count. See `calculateOffsetCost()`.
-
-## Testing Strategy
-
-No automated tests currently. Manual testing checklist:
-1. Create quotation with offset printing
-2. Create quotation with digital printing
-3. Add additional pieces (guillotine cuts)
-4. Test talonarios calculation (booklets)
-5. Save quotation → Load → Edit → Update
-6. Generate PDF and verify MinIO upload
-7. Test all finishing options (UV, lamination, troquel)
-
-## Key Files Reference
-
-- `src/App.jsx` - Routing, auth modal, page switching
-- `src/context/FirebaseContext.jsx` - Firebase initialization, Google auth
-- `src/config/storage.js` - MinIO S3 client setup
-- `src/utils/calculationEngine.js` - Core printing calculations
-- `src/utils/constants.js` - All magic numbers, printing areas, messages
-- `src/pages/Calculator/Calculator.jsx` - Main quotation interface
-- `.cursor/rules/` - Extended coding guidelines (Spanish comments, etc.)
-
-## External Documentation
-
-- [Vite Environment Variables](https://vitejs.dev/guide/env-and-mode.html) - Use `import.meta.env.VITE_*`
-- [Firestore Modular SDK](https://firebase.google.com/docs/firestore) - Use v9+ modular imports
-- [AWS SDK S3 Client](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/s3/) - For MinIO operations
-- [Tailwind CSS](https://tailwindcss.com/docs) - Utility-first CSS framework
-
----
-
-**For refactoring guidance**: See `REFACTORIZACION_*.md` files in root for detailed architectural decisions and migration paths.
+When working with clients or quotations, expect these new fields in the schema. All navigation must use React Router APIs (`useNavigate`, `Link`, etc.).

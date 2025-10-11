@@ -25,7 +25,7 @@ import FinishingSection from "./components/FinishingSection";
 import ProfitSection from "./components/ProfitSection";
 import BcvRateSection from "./components/BcvRateSection";
 import IvaSection from "./components/IvaSection";
-
+import MigrationPanel from '../../components/MigrationPanel';
 /**
  * Componente principal del gestor de perfiles de precios
  * Permite crear, editar y duplicar perfiles de precios personalizados
@@ -185,6 +185,10 @@ function PriceProfiles() {
       <div className="max-w-7xl mx-auto bg-white p-4 sm:p-6 lg:p-8 rounded-none sm:rounded-2xl shadow-xl space-y-10">
         {/* Header */}
         <PriceProfileHeader />
+
+        <div className="mb-6">
+  <MigrationPanel />
+</div>
 
         {/* Selector de perfil */}
         <ProfileSelector

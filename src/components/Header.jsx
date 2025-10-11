@@ -1,8 +1,11 @@
 import React, { useState } from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useFirebase } from "../context/FirebaseContext";
 
-export default function Header({ currentPage, setCurrentPage, onShowAuth }) {
+export default function Header({ currentPage, onShowAuth }) {
   const { user, logout } = useFirebase();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -15,9 +18,14 @@ export default function Header({ currentPage, setCurrentPage, onShowAuth }) {
   };
 
   // Función para navegar y cerrar el menú móvil
-  const navigateTo = (page) => {
-    setCurrentPage(page);
+  const navigateTo = (path) => {
+    navigate(path);
     setMobileMenuOpen(false);
+  };
+
+  // Determinar si una ruta está activa
+  const isActive = (path) => {
+    return location.pathname.startsWith(path);
   };
 
   return (
@@ -51,46 +59,46 @@ export default function Header({ currentPage, setCurrentPage, onShowAuth }) {
           <div className="hidden lg:flex items-center space-x-3">
             {user && (
               <>
-                <button
-                  onClick={() => setCurrentPage("calculator")}
+                <Link
+                  to="/calculator"
                   className={`btn-primary ${
-                    currentPage === "calculator"
+                    isActive('/calculator')
                       ? "bg-white text-blue-700 shadow-md"
                       : "bg-blue-500/80 text-white hover:bg-blue-500"
                   }`}
                 >
                   Calculadora
-                </button>
-                <button
-                  onClick={() => setCurrentPage("clients")}
+                </Link>
+                <Link
+                  to="/clients"
                   className={`btn-primary ${
-                    currentPage === "clients"
+                    isActive('/clients')
                       ? "bg-white text-blue-700 shadow-md"
                       : "bg-blue-500/80 text-white hover:bg-blue-500"
                   }`}
                 >
                   Clientes
-                </button>
-                <button
-                  onClick={() => setCurrentPage("priceProfiles")}
+                </Link>
+                <Link
+                  to="/price-profiles"
                   className={`btn-primary ${
-                    currentPage === "priceProfiles"
+                    isActive('/price-profiles')
                       ? "bg-white text-blue-700 shadow-md"
                       : "bg-blue-500/80 text-white hover:bg-blue-500"
                   }`}
                 >
                   Configuración
-                </button>
-                <button
-                  onClick={() => setCurrentPage("savedQuotations")}
+                </Link>
+                <Link
+                  to="/quotations"
                   className={`btn-primary ${
-                    currentPage === "savedQuotations"
+                    isActive('/quotations')
                       ? "bg-white text-blue-700 shadow-md"
                       : "bg-blue-500/80 text-white hover:bg-blue-500"
                   }`}
                 >
                   Guardadas
-                </button>
+                </Link>
               </>
             )}
 
@@ -166,6 +174,8 @@ export default function Header({ currentPage, setCurrentPage, onShowAuth }) {
           </div>
         </div>
 
+        {/* Breadcrumbs removidos - React Router maneja la navegación */}
+
         {/* Menú móvil desplegable */}
         {mobileMenuOpen && (
           <div className="lg:hidden mt-4 pt-4 border-t border-white/20 animate-fade-in">
@@ -180,9 +190,9 @@ export default function Header({ currentPage, setCurrentPage, onShowAuth }) {
 
                   {/* Botones de navegación */}
                   <button
-                    onClick={() => navigateTo("calculator")}
+                    onClick={() => navigateTo("/calculator")}
                     className={`btn-primary text-left ${
-                      currentPage === "calculator"
+                      isActive('/calculator')
                         ? "bg-white text-blue-700 shadow-md"
                         : "bg-blue-500/80 text-white hover:bg-blue-500"
                     }`}
@@ -190,9 +200,9 @@ export default function Header({ currentPage, setCurrentPage, onShowAuth }) {
                     📊 Calculadora
                   </button>
                   <button
-                    onClick={() => navigateTo("clients")}
+                    onClick={() => navigateTo("/clients")}
                     className={`btn-primary text-left ${
-                      currentPage === "clients"
+                      isActive('/clients')
                         ? "bg-white text-blue-700 shadow-md"
                         : "bg-blue-500/80 text-white hover:bg-blue-500"
                     }`}
@@ -200,9 +210,9 @@ export default function Header({ currentPage, setCurrentPage, onShowAuth }) {
                     👥 Clientes
                   </button>
                   <button
-                    onClick={() => navigateTo("priceProfiles")}
+                    onClick={() => navigateTo("/price-profiles")}
                     className={`btn-primary text-left ${
-                      currentPage === "priceProfiles"
+                      isActive('/price-profiles')
                         ? "bg-white text-blue-700 shadow-md"
                         : "bg-blue-500/80 text-white hover:bg-blue-500"
                     }`}
@@ -210,9 +220,9 @@ export default function Header({ currentPage, setCurrentPage, onShowAuth }) {
                     ⚙️ Configuración
                   </button>
                   <button
-                    onClick={() => navigateTo("savedQuotations")}
+                    onClick={() => navigateTo("/quotations")}
                     className={`btn-primary text-left ${
-                      currentPage === "savedQuotations"
+                      isActive('/quotations')
                         ? "bg-white text-blue-700 shadow-md"
                         : "bg-blue-500/80 text-white hover:bg-blue-500"
                     }`}

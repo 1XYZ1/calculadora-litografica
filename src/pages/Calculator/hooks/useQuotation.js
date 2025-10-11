@@ -145,6 +145,12 @@ export const useQuotation = ({
         items,
         grandTotals,
         status: "pending", // Estado inicial para nuevas cotizaciones
+        // Nuevos campos de la migración
+        isTemplate: false,
+        templateName: "",
+        usageCount: 0,
+        duplicatedFrom: null,
+        createdVia: "manual",
       };
 
       await addDoc(quotationsCollectionRef, quotationData);
@@ -195,6 +201,10 @@ export const useQuotation = ({
         timestamp: Timestamp.now(),
         items,
         grandTotals,
+        // Mantener campos existentes de template si existen, si no, usar defaults
+        isTemplate: false,
+        templateName: "",
+        usageCount: 0,
       };
 
       await updateDoc(quotationDocRef, quotationData);
@@ -220,6 +230,19 @@ export const useQuotation = ({
     grandTotals,
   ]);
 
+  // Cargar cotización desde plantilla
+  const loadFromTemplate = useCallback((templateData, newClientId, newClientName, newQuotationName = null) => {
+    if (!templateData) return;
+
+    setClientId(newClientId);
+    setClientName(newClientName);
+    setMainQuotationName(
+      newQuotationName || `${templateData.templateName || templateData.name} (desde plantilla)`
+    );
+    setEditingQuotationId(null); // Nueva cotización, no edición
+    // Los items se cargarán desde templateData.items
+  }, [setClientId, setClientName, setMainQuotationName, setEditingQuotationId]);
+
   return {
     mainQuotationName,
     setMainQuotationName,
@@ -236,5 +259,6 @@ export const useQuotation = ({
     resetQuotation,
     saveQuotation,
     updateQuotation,
+    loadFromTemplate,
   };
 };

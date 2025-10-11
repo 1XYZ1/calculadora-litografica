@@ -1,9 +1,11 @@
 import React, { useState, useCallback, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useFirebase } from "../../context/FirebaseContext";
 import QuotationPreviewModal from "../../components/QuotationPreviewModal";
 import ToastContainer from "../../components/ToastContainer";
 import QuotationInitialScreen from "./components/QuotationInitialScreen";
 import QuotationHeader from "./components/QuotationHeader";
+import PriceProfileIndicator from "./components/PriceProfileIndicator";
 import {
   StepperHeader,
   StepNavigationButtons,
@@ -17,7 +19,7 @@ import { useItemCalculations } from "./hooks/useItemCalculations";
 import { useItemForm } from "./hooks/useItemForm";
 import { useQuotation } from "./hooks/useQuotation";
 import { useTalonarios } from "./hooks/useTalonarios";
-import { useClients } from "../../hooks/useClients";
+import { useClients } from "../../context/ClientsContext";
 import { useStepperNavigation } from "./hooks/useStepperNavigation";
 import { useStepValidation } from "./hooks/useStepValidation";
 import { useToast } from "./hooks/useToast";
@@ -27,12 +29,14 @@ import { MESSAGES } from "../../utils/constants";
  * Componente principal de la calculadora de cotizaciones
  * Orquesta todos los hooks y componentes especializados
  */
-function QuotationCalculator({
-  loadedQuotation = null,
-  setLoadedQuotation = () => {},
-  onNavigateToPage = () => {},
-}) {
+function QuotationCalculator() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { db, appId, userId } = useFirebase();
+
+  // Obtener cotización cargada desde el estado de navegación (si viene de SavedQuotations)
+  const loadedQuotationFromState = location.state?.quotation || null;
+  const [loadedQuotation, setLoadedQuotation] = useState(loadedQuotationFromState);
 
   // Hook: Sistema de notificaciones Toast
   const { toasts, showToast, removeToast } = useToast();
@@ -245,14 +249,13 @@ function QuotationCalculator({
       "info"
     );
     setTimeout(() => {
-      onNavigateToPage("savedQuotations");
+      navigate("/quotations");
     }, 500);
   }, [
     resetQuotation,
     resetItemForm,
-    setLoadedQuotation,
     showToast,
-    onNavigateToPage,
+    navigate,
   ]);
 
   // Handler: Vista previa
@@ -415,7 +418,7 @@ function QuotationCalculator({
           setClientId={setClientId}
           setClientName={setClientName}
           onBeginQuotation={handleBeginQuotation}
-          onNavigateToClients={() => onNavigateToPage("clients")}
+          onNavigateToClients={() => navigate("/clients")}
         />
       ) : (
         /* Contenedor principal del Stepper */
@@ -438,6 +441,13 @@ function QuotationCalculator({
               clients={clients}
               isEditing={!!editingQuotationId}
             />
+          )}
+
+          {/* Indicador de perfil de precios - Mostrar en todos los pasos del stepper */}
+          {clientId && clientName && (
+            <div className="mb-4">
+              <PriceProfileIndicator clientId={clientId} clientName={clientName} />
+            </div>
           )}
 
           {/* Stepper Header - No mostrar en paso 4 (resumen final) */}
