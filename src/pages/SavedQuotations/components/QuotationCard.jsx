@@ -148,10 +148,10 @@ const QuotationCard = ({
             <span className="text-gray-600">
               {timestamp ? formatQuotationDate(timestamp) : "Sin fecha"}
             </span>
-            {isTemplate && usageCount > 0 && (
+            {isTemplate && (
               <>
                 <span className="text-gray-500">•</span>
-                <span className="text-amber-600 font-medium">
+                <span className={`font-medium ${usageCount > 0 ? 'text-amber-600' : 'text-gray-500'}`}>
                   Usada {usageCount} {usageCount === 1 ? "vez" : "veces"}
                 </span>
               </>

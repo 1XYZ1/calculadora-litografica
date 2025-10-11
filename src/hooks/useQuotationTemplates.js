@@ -9,7 +9,7 @@ import {
   query,
   where,
   orderBy,
-  getDocs,
+  onSnapshot,
   doc,
   updateDoc,
   increment,
@@ -28,11 +28,15 @@ export const useQuotationTemplates = () => {
   const [error, setError] = useState(null);
 
   /**
-   * Carga todas las plantillas del usuario
+   * Listener en tiempo real para plantillas
    * Ordenadas por usageCount descendente (más usadas primero)
    */
-  const loadTemplates = useCallback(async () => {
-    if (!userId || !db || !appId) return;
+  useEffect(() => {
+    if (!userId || !db || !appId) {
+      setTemplates([]);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -50,36 +54,44 @@ export const useQuotationTemplates = () => {
         where('isTemplate', '==', true)
       );
 
-      const snapshot = await getDocs(templatesQuery);
-      const templatesList = snapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
-        // Ordenar localmente: primero por usageCount desc, luego por timestamp desc
-        .sort((a, b) => {
-          const usageDiff = (b.usageCount || 0) - (a.usageCount || 0);
-          if (usageDiff !== 0) return usageDiff;
+      // Listener en tiempo real
+      const unsubscribe = onSnapshot(
+        templatesQuery,
+        (snapshot) => {
+          const templatesList = snapshot.docs
+            .map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }))
+            // Ordenar localmente: primero por usageCount desc, luego por timestamp desc
+            .sort((a, b) => {
+              const usageDiff = (b.usageCount || 0) - (a.usageCount || 0);
+              if (usageDiff !== 0) return usageDiff;
 
-          // Si tienen el mismo usageCount, ordenar por fecha más reciente
-          const aTime = a.timestamp?.toMillis?.() || 0;
-          const bTime = b.timestamp?.toMillis?.() || 0;
-          return bTime - aTime;
-        });
+              // Si tienen el mismo usageCount, ordenar por fecha más reciente
+              const aTime = a.timestamp?.toMillis?.() || 0;
+              const bTime = b.timestamp?.toMillis?.() || 0;
+              return bTime - aTime;
+            });
 
-      setTemplates(templatesList);
+          setTemplates(templatesList);
+          setLoading(false);
+        },
+        (err) => {
+          console.error('Error en listener de plantillas:', err);
+          setError(err.message);
+          setLoading(false);
+        }
+      );
+
+      // Cleanup: cancelar suscripción al desmontar
+      return () => unsubscribe();
     } catch (err) {
-      console.error('Error cargando plantillas:', err);
+      console.error('Error configurando listener de plantillas:', err);
       setError(err.message);
-    } finally {
       setLoading(false);
     }
   }, [db, appId, userId]);
-
-  // Cargar plantillas automáticamente cuando el usuario está disponible
-  useEffect(() => {
-    loadTemplates();
-  }, [loadTemplates]);
 
   /**
    * Marca una cotización como plantilla
@@ -103,16 +115,14 @@ export const useQuotationTemplates = () => {
           updatedAt: Timestamp.now(),
         });
 
-        // Recargar plantillas
-        await loadTemplates();
-
+        // El listener en tiempo real actualizará automáticamente las plantillas
         return { success: true };
       } catch (err) {
         console.error('Error marcando como plantilla:', err);
         throw err;
       }
     },
-    [db, appId, userId, loadTemplates]
+    [db, appId, userId]
   );
 
   /**
@@ -137,16 +147,14 @@ export const useQuotationTemplates = () => {
           updatedAt: Timestamp.now(),
         });
 
-        // Recargar plantillas
-        await loadTemplates();
-
+        // El listener en tiempo real actualizará automáticamente las plantillas
         return { success: true };
       } catch (err) {
         console.error('Error desmarcando plantilla:', err);
         throw err;
       }
     },
-    [db, appId, userId, loadTemplates]
+    [db, appId, userId]
   );
 
   /**
@@ -271,17 +279,21 @@ export const useQuotationTemplates = () => {
           updatedAt: Timestamp.now(),
         });
 
-        // Recargar plantillas
-        await loadTemplates();
-
+        // El listener en tiempo real actualizará automáticamente las plantillas
         return { success: true };
       } catch (err) {
         console.error('Error actualizando nombre de plantilla:', err);
         throw err;
       }
     },
-    [db, appId, userId, loadTemplates]
+    [db, appId, userId]
   );
+
+  // Función dummy para compatibilidad (el listener maneja todo automáticamente)
+  const loadTemplates = useCallback(() => {
+    // No hace nada - el listener en tiempo real se encarga de todo
+    return Promise.resolve();
+  }, []);
 
   return {
     templates,

@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
+import { collection, addDoc, Timestamp, doc, updateDoc, increment } from "firebase/firestore";
 
 /**
  * Hook para manejar la duplicación de cotizaciones
@@ -51,12 +51,25 @@ export function useQuotationDuplication({ db, appId, userId, onSuccess, onError 
           updatedAt: Timestamp.now(),
           // Campos para tracking de duplicación
           duplicatedFrom: originalQuotation.id,
-          createdVia: "duplicate",
+          createdVia: originalQuotation.isTemplate ? "template" : "duplicate",
           isTemplate: false,
           usageCount: 0,
         };
 
         await addDoc(quotationsCollectionRef, newQuotation);
+
+        // Si la cotización original es una plantilla, incrementar su contador de uso
+        if (originalQuotation.isTemplate && originalQuotation.id) {
+          const templateRef = doc(
+            db,
+            `artifacts/${appId}/users/${userId}/quotations`,
+            originalQuotation.id
+          );
+          await updateDoc(templateRef, {
+            usageCount: increment(1),
+            updatedAt: Timestamp.now(),
+          });
+        }
 
         setModalState(null);
 
