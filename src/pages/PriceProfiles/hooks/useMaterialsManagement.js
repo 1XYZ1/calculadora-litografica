@@ -263,20 +263,31 @@ export function useMaterialsManagement(
       return;
     }
 
-    // Validar todos los precios antes de actualizar
+    // Validar solo los precios que han cambiado realmente
     const validatedPrices = {};
+    const updatedPlateNames = [];
 
     for (const [plateId, value] of Object.entries(platePriceInputs)) {
       if (!value) continue; // Skip empty inputs
 
-      const plateName = plateSizes.find((p) => p.id === plateId)?.size;
-      const validation = validatePrice(value, plateName);
+      const plate = plateSizes.find((p) => p.id === plateId);
+      const plateName = plate?.size;
 
-      if (!validation.isValid) {
-        notification.showError(validation.error);
-        return;
+      // Comparar con el valor actual para solo actualizar lo que cambió
+      const currentPrice = plate?.price || 0;
+      const newPrice = parseFloat(value);
+
+      // Solo validar y actualizar si hay un cambio real
+      if (!isNaN(newPrice) && newPrice !== currentPrice) {
+        const validation = validatePrice(value, plateName);
+
+        if (!validation.isValid) {
+          notification.showError(validation.error);
+          return;
+        }
+        validatedPrices[plateId] = validation.value;
+        updatedPlateNames.push(plateName);
       }
-      validatedPrices[plateId] = validation.value;
     }
 
     if (Object.keys(validatedPrices).length === 0) {
@@ -286,7 +297,7 @@ export function useMaterialsManagement(
 
     setLoadingPlatesAll(true);
     try {
-      // Actualizar todos los precios en paralelo
+      // Actualizar solo los precios que cambiaron
       const updatePromises = Object.entries(validatedPrices).map(
         ([plateId, value]) => {
           const docRef = doc(
@@ -299,9 +310,20 @@ export function useMaterialsManagement(
       );
 
       await Promise.all(updatePromises);
-      notification.showSuccess(
-        `${Object.keys(validatedPrices).length} precios de plancha actualizados`
-      );
+
+      // Mensaje claro indicando qué placas se actualizaron
+      const count = updatedPlateNames.length;
+      if (count === 1) {
+        notification.showSuccess(`Plancha actualizada: ${updatedPlateNames[0]}`);
+      } else if (count <= 3) {
+        notification.showSuccess(
+          `Planchas actualizadas: ${updatedPlateNames.join(", ")}`
+        );
+      } else {
+        notification.showSuccess(
+          `${count} planchas actualizadas: ${updatedPlateNames.slice(0, 2).join(", ")} y ${count - 2} más`
+        );
+      }
     } catch (e) {
       console.error("Error updating plate prices:", e);
       notification.showError("Error al actualizar los precios de planchas");
@@ -466,20 +488,31 @@ export function useMaterialsManagement(
       return;
     }
 
-    // Validar todos los precios antes de actualizar
+    // Validar solo los precios que han cambiado realmente
     const validatedPrices = {};
+    const updatedMachineNames = [];
 
     for (const [machineId, value] of Object.entries(machinePriceInputs)) {
       if (!value) continue; // Skip empty inputs
 
-      const machineName = machineTypes.find((m) => m.id === machineId)?.name;
-      const validation = validatePrice(value, machineName);
+      const machine = machineTypes.find((m) => m.id === machineId);
+      const machineName = machine?.name;
 
-      if (!validation.isValid) {
-        notification.showError(validation.error);
-        return;
+      // Comparar con el valor actual para solo actualizar lo que cambió
+      const currentPrice = machine?.millarPrice || 0;
+      const newPrice = parseFloat(value);
+
+      // Solo validar y actualizar si hay un cambio real
+      if (!isNaN(newPrice) && newPrice !== currentPrice) {
+        const validation = validatePrice(value, machineName);
+
+        if (!validation.isValid) {
+          notification.showError(validation.error);
+          return;
+        }
+        validatedPrices[machineId] = validation.value;
+        updatedMachineNames.push(machineName);
       }
-      validatedPrices[machineId] = validation.value;
     }
 
     if (Object.keys(validatedPrices).length === 0) {
@@ -489,7 +522,7 @@ export function useMaterialsManagement(
 
     setLoadingMachinesAll(true);
     try {
-      // Actualizar todos los precios en paralelo
+      // Actualizar solo los precios que cambiaron
       const updatePromises = Object.entries(validatedPrices).map(
         ([machineId, value]) => {
           const docRef = doc(
@@ -502,9 +535,20 @@ export function useMaterialsManagement(
       );
 
       await Promise.all(updatePromises);
-      notification.showSuccess(
-        `${Object.keys(validatedPrices).length} precios de máquina actualizados`
-      );
+
+      // Mensaje claro indicando qué máquinas se actualizaron
+      const count = updatedMachineNames.length;
+      if (count === 1) {
+        notification.showSuccess(`Máquina actualizada: ${updatedMachineNames[0]}`);
+      } else if (count <= 3) {
+        notification.showSuccess(
+          `Máquinas actualizadas: ${updatedMachineNames.join(", ")}`
+        );
+      } else {
+        notification.showSuccess(
+          `${count} máquinas actualizadas: ${updatedMachineNames.slice(0, 2).join(", ")} y ${count - 2} más`
+        );
+      }
     } catch (e) {
       console.error("Error updating machine prices:", e);
       notification.showError("Error al actualizar los precios de máquinas");

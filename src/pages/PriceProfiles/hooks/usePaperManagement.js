@@ -217,20 +217,31 @@ export function usePaperManagement(papers, notification, priceProfileId) {
       return;
     }
 
-    // Validar todos los precios antes de actualizar
+    // Validar solo los precios que han cambiado realmente
     const validatedPrices = {};
+    const updatedPaperNames = [];
 
     for (const [paperId, value] of Object.entries(paperPriceInputs)) {
       if (!value) continue; // Skip empty inputs
 
-      const paperName = papers.find((p) => p.id === paperId)?.name;
-      const validation = validatePrice(value, paperName);
+      const paper = papers.find((p) => p.id === paperId);
+      const paperName = paper?.name;
 
-      if (!validation.isValid) {
-        notification.showError(validation.error);
-        return;
+      // Comparar con el valor actual para solo actualizar lo que cambió
+      const currentPrice = paper?.pricePerSheet || 0;
+      const newPrice = parseFloat(value);
+
+      // Solo validar y actualizar si hay un cambio real
+      if (!isNaN(newPrice) && newPrice !== currentPrice) {
+        const validation = validatePrice(value, paperName);
+
+        if (!validation.isValid) {
+          notification.showError(validation.error);
+          return;
+        }
+        validatedPrices[paperId] = validation.value;
+        updatedPaperNames.push(paperName);
       }
-      validatedPrices[paperId] = validation.value;
     }
 
     if (Object.keys(validatedPrices).length === 0) {
@@ -240,7 +251,7 @@ export function usePaperManagement(papers, notification, priceProfileId) {
 
     setLoadingAll(true);
     try {
-      // Actualizar todos los precios en paralelo
+      // Actualizar solo los precios que cambiaron
       const updatePromises = Object.entries(validatedPrices).map(
         ([paperId, value]) => {
           const docRef = doc(
@@ -253,9 +264,20 @@ export function usePaperManagement(papers, notification, priceProfileId) {
       );
 
       await Promise.all(updatePromises);
-      notification.showSuccess(
-        `${Object.keys(validatedPrices).length} precios de papel actualizados`
-      );
+
+      // Mensaje claro indicando qué papeles se actualizaron
+      const count = updatedPaperNames.length;
+      if (count === 1) {
+        notification.showSuccess(`Papel actualizado: ${updatedPaperNames[0]}`);
+      } else if (count <= 3) {
+        notification.showSuccess(
+          `Papeles actualizados: ${updatedPaperNames.join(", ")}`
+        );
+      } else {
+        notification.showSuccess(
+          `${count} papeles actualizados: ${updatedPaperNames.slice(0, 2).join(", ")} y ${count - 2} más`
+        );
+      }
     } catch (e) {
       console.error("Error updating paper prices:", e);
       notification.showError("Error al actualizar los precios de papel");

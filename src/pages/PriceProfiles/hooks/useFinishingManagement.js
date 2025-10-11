@@ -181,22 +181,37 @@ export function useFinishingManagement(
       return;
     }
 
-    // Validar todos los precios de UV antes de actualizar
+    // Validar solo los precios de UV que han cambiado realmente
     const uvEntries = Object.entries(uvPricesInput);
     const validatedPrices = {};
+    const updatedUvSizes = [];
 
     for (const [key, value] of uvEntries) {
-      const validation = validatePrice(value, formatIdForMessage(`uv_${key}`));
-      if (!validation.isValid) {
-        notification.showError(validation.error);
-        return;
+      if (!value) continue; // Skip empty inputs
+
+      const currentPrice = finishingPrices?.[`uv_${key}`] || 0;
+      const newPrice = parseFloat(value);
+
+      // Solo validar y actualizar si hay un cambio real
+      if (!isNaN(newPrice) && newPrice !== currentPrice) {
+        const validation = validatePrice(value, formatIdForMessage(`uv_${key}`));
+        if (!validation.isValid) {
+          notification.showError(validation.error);
+          return;
+        }
+        validatedPrices[key] = validation.value;
+        updatedUvSizes.push(formatIdForMessage(`uv_${key}`));
       }
-      validatedPrices[key] = validation.value;
+    }
+
+    if (Object.keys(validatedPrices).length === 0) {
+      notification.showError("No hay cambios pendientes para actualizar");
+      return;
     }
 
     setLoadingItemId("uv_all");
     try {
-      // Actualizar todos los precios de UV en paralelo
+      // Actualizar solo los precios de UV que cambiaron
       const updatePromises = Object.entries(validatedPrices).map(
         ([key, value]) => {
           const docRef = doc(
@@ -209,16 +224,27 @@ export function useFinishingManagement(
       );
 
       await Promise.all(updatePromises);
-      notification.showSuccess(
-        "Todos los precios de UV actualizados correctamente"
-      );
+
+      // Mensaje claro indicando qué tamaños de UV se actualizaron
+      const count = updatedUvSizes.length;
+      if (count === 1) {
+        notification.showSuccess(`UV actualizado: ${updatedUvSizes[0]}`);
+      } else if (count <= 3) {
+        notification.showSuccess(
+          `UV actualizados: ${updatedUvSizes.join(", ")}`
+        );
+      } else {
+        notification.showSuccess(
+          `${count} precios UV actualizados: ${updatedUvSizes.slice(0, 2).join(", ")} y ${count - 2} más`
+        );
+      }
     } catch (e) {
       console.error("Error updating UV prices:", e);
       notification.showError("Error al actualizar los precios de UV");
     } finally {
       setLoadingItemId(null);
     }
-  }, [userId, db, appId, notification, priceProfileId, uvPricesInput]);
+  }, [userId, db, appId, notification, priceProfileId, uvPricesInput, finishingPrices]);
 
   // Función para actualizar TODOS los otros acabados de una vez
   const updateAllOtherFinishings = useCallback(async () => {
@@ -241,21 +267,36 @@ export function useFinishingManagement(
       troquelado: troqueladoPriceInput,
     };
 
-    // Validar todos los precios antes de actualizar
+    // Validar solo los precios que han cambiado realmente
     const validatedPrices = {};
+    const updatedFinishingNames = [];
 
     for (const [id, value] of Object.entries(finishingsToUpdate)) {
-      const validation = validatePrice(value, formatIdForMessage(id));
-      if (!validation.isValid) {
-        notification.showError(validation.error);
-        return;
+      if (!value) continue; // Skip empty inputs
+
+      const currentPrice = finishingPrices?.[id] || 0;
+      const newPrice = parseFloat(value);
+
+      // Solo validar y actualizar si hay un cambio real
+      if (!isNaN(newPrice) && newPrice !== currentPrice) {
+        const validation = validatePrice(value, formatIdForMessage(id));
+        if (!validation.isValid) {
+          notification.showError(validation.error);
+          return;
+        }
+        validatedPrices[id] = validation.value;
+        updatedFinishingNames.push(formatIdForMessage(id));
       }
-      validatedPrices[id] = validation.value;
+    }
+
+    if (Object.keys(validatedPrices).length === 0) {
+      notification.showError("No hay cambios pendientes para actualizar");
+      return;
     }
 
     setLoadingItemId("other_all");
     try {
-      // Actualizar todos los acabados en paralelo
+      // Actualizar solo los acabados que cambiaron
       const updatePromises = Object.entries(validatedPrices).map(
         ([id, value]) => {
           const docRef = doc(
@@ -268,7 +309,20 @@ export function useFinishingManagement(
       );
 
       await Promise.all(updatePromises);
-      notification.showSuccess("Todos los acabados actualizados correctamente");
+
+      // Mensaje claro indicando qué acabados se actualizaron
+      const count = updatedFinishingNames.length;
+      if (count === 1) {
+        notification.showSuccess(`Acabado actualizado: ${updatedFinishingNames[0]}`);
+      } else if (count <= 3) {
+        notification.showSuccess(
+          `Acabados actualizados: ${updatedFinishingNames.join(", ")}`
+        );
+      } else {
+        notification.showSuccess(
+          `${count} acabados actualizados: ${updatedFinishingNames.slice(0, 2).join(", ")} y ${count - 2} más`
+        );
+      }
     } catch (e) {
       console.error("Error updating finishing prices:", e);
       notification.showError("Error al actualizar los precios de acabados");
@@ -286,6 +340,7 @@ export function useFinishingManagement(
     laminadoBrillantePriceInput,
     signadoPriceInput,
     troqueladoPriceInput,
+    finishingPrices,
   ]);
 
   // Función para actualizar AMBOS precios de impresión digital de una vez
@@ -306,21 +361,36 @@ export function useFinishingManagement(
       digital_quarter_tiro_retiro: digitalQuarterTiroRetiroInput,
     };
 
-    // Validar ambos precios antes de actualizar
+    // Validar solo los precios que han cambiado realmente
     const validatedPrices = {};
+    const updatedDigitalNames = [];
 
     for (const [id, value] of Object.entries(digitalPrices)) {
-      const validation = validatePrice(value, formatIdForMessage(id));
-      if (!validation.isValid) {
-        notification.showError(validation.error);
-        return;
+      if (!value) continue; // Skip empty inputs
+
+      const currentPrice = finishingPrices?.[id] || 0;
+      const newPrice = parseFloat(value);
+
+      // Solo validar y actualizar si hay un cambio real
+      if (!isNaN(newPrice) && newPrice !== currentPrice) {
+        const validation = validatePrice(value, formatIdForMessage(id));
+        if (!validation.isValid) {
+          notification.showError(validation.error);
+          return;
+        }
+        validatedPrices[id] = validation.value;
+        updatedDigitalNames.push(formatIdForMessage(id));
       }
-      validatedPrices[id] = validation.value;
+    }
+
+    if (Object.keys(validatedPrices).length === 0) {
+      notification.showError("No hay cambios pendientes para actualizar");
+      return;
     }
 
     setLoadingItemId("digital_all");
     try {
-      // Actualizar ambos precios digitales en paralelo
+      // Actualizar solo los precios digitales que cambiaron
       const updatePromises = Object.entries(validatedPrices).map(
         ([id, value]) => {
           const docRef = doc(
@@ -333,9 +403,16 @@ export function useFinishingManagement(
       );
 
       await Promise.all(updatePromises);
-      notification.showSuccess(
-        "Precios de impresión digital actualizados correctamente"
-      );
+
+      // Mensaje claro indicando qué precios digitales se actualizaron
+      const count = updatedDigitalNames.length;
+      if (count === 1) {
+        notification.showSuccess(`Precio digital actualizado: ${updatedDigitalNames[0]}`);
+      } else {
+        notification.showSuccess(
+          `Precios digitales actualizados: ${updatedDigitalNames.join(", ")}`
+        );
+      }
     } catch (e) {
       console.error("Error updating digital printing prices:", e);
       notification.showError(
@@ -352,6 +429,7 @@ export function useFinishingManagement(
     priceProfileId,
     digitalQuarterTiroInput,
     digitalQuarterTiroRetiroInput,
+    finishingPrices,
   ]);
 
   return {

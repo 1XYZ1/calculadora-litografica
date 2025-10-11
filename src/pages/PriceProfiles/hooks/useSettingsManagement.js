@@ -75,7 +75,9 @@ export function useSettingsManagement(settings, notification, priceProfileId) {
         { merge: true }
       );
 
-      notification.showSuccess(ADMIN_SUCCESS_MESSAGES.PROFIT_UPDATED);
+      notification.showSuccess(
+        `Porcentaje de ganancia actualizado a ${validation.value}%`
+      );
     } catch (e) {
       console.error("Error updating profit percentage:", e);
       notification.showError("Error al actualizar el porcentaje de ganancia.");
@@ -113,7 +115,9 @@ export function useSettingsManagement(settings, notification, priceProfileId) {
 
       await setDoc(bcvRateDocRef, { rate: validation.value }, { merge: true });
 
-      notification.showSuccess(ADMIN_SUCCESS_MESSAGES.BCV_UPDATED);
+      notification.showSuccess(
+        `Tasa BCV actualizada a Bs. ${validation.value.toFixed(2)}`
+      );
     } catch (e) {
       console.error("Error updating BCV rate:", e);
       notification.showError("Error al actualizar la tasa de dólar BCV.");
@@ -159,7 +163,9 @@ export function useSettingsManagement(settings, notification, priceProfileId) {
         { merge: true }
       );
 
-      notification.showSuccess(ADMIN_SUCCESS_MESSAGES.IVA_UPDATED);
+      notification.showSuccess(
+        `Porcentaje de IVA actualizado a ${validation.value}%`
+      );
     } catch (e) {
       console.error("Error updating IVA percentage:", e);
       notification.showError("Error al actualizar el porcentaje de IVA.");
